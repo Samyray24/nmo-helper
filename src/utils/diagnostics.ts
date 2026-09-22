@@ -1,6 +1,8 @@
 import {getQuestionText, getTopicElement, getVariantElements} from '../api/dom';
 import {getBrowserCapabilities} from './browser-capabilities';
 import {questionFingerprint} from './question-fingerprint';
+import {sourceHealth, type ISourceHealthSnapshot} from './source-health';
+import {detectDomProfile, type DomProfileName} from './dom-profile';
 
 const MAX_EVENTS = 200;
 
@@ -16,10 +18,11 @@ export interface IDiagnosticEvent {
 export interface IDiagnosticsReport {
 	readonly generatedAt: string;
 	readonly browser: ReturnType<typeof getBrowserCapabilities>;
-	readonly dom: {topic: boolean; question: boolean; variants: number; nextButton: boolean};
+	readonly dom: {topic: boolean; question: boolean; variants: number; nextButton: boolean; profile: DomProfileName; missing: readonly string[]};
 	readonly storage: {extensionStorage: boolean; indexedDb: boolean};
 	readonly question: {fingerprint: string; text?: string; variants?: string[]};
 	readonly events: readonly IDiagnosticEvent[];
+	readonly sources: readonly ISourceHealthSnapshot[];
 }
 
 class Diagnostics {
@@ -40,16 +43,18 @@ class Diagnostics {
 		const topic = getTopicElement()?.textContent?.trim() ?? '';
 		const question = getQuestionText() ?? '';
 		const variants = getVariantElements().map(element => element.textContent?.trim() ?? '');
+		const profile = detectDomProfile();
 		return {
 			generatedAt: new Date().toISOString(),
 			browser: getBrowserCapabilities(),
-			dom: {topic: !!topic, question: !!question, variants: variants.length, nextButton: !!document.querySelector('button.question-buttons-primary, .question-buttons button')},
+			dom: {topic: !!topic, question: !!question, variants: variants.length, nextButton: !!document.querySelector('button.question-buttons-primary, .question-buttons button'), profile: profile.name, missing: profile.missing},
 			storage: {extensionStorage: !!chrome.storage?.local, indexedDb: typeof indexedDB !== 'undefined'},
 			question: {
 				fingerprint: question ? questionFingerprint(topic, question, variants) : '',
 				...(options.includeQuestionText ? {text: question, variants} : {}),
 			},
 			events: this.events.map(event => ({...event})),
+			sources: sourceHealth.snapshot(),
 		};
 	}
 

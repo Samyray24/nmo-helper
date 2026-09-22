@@ -3,6 +3,7 @@ import {act, renderHook} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import type {IExtensionState} from '../types';
 import {storageGet} from '../utils';
+import {credentialGet} from '../api/credential-storage';
 import {
 	SettingsProvider,
 	TEST_DATA_SHARING_STORAGE_KEY,
@@ -71,7 +72,7 @@ describe('SettingsProvider nested API', () => {
 		expect(result.current.testDataSharing.enabled).toBe(true);
 	});
 
-	it('сохраняет изменения по прежним плоским storage-ключам', async () => {
+	it('сохраняет обычные настройки постоянно, а токены только на сессию', async () => {
 		const {result} = renderHook(useSettings, {wrapper: createWrapper(createInitialState())});
 
 		act(() => {
@@ -98,10 +99,12 @@ describe('SettingsProvider nested API', () => {
 		expect(result.current.testDataSharing.enabled).toBe(true);
 
 		await expect(storageGet('aiProvider', '')).resolves.toBe('proxy');
-		await expect(storageGet('apiKey', '')).resolves.toBe('next-proxy-key');
+		await expect(credentialGet('apiKey')).resolves.toBe('next-proxy-key');
+		await expect(storageGet('apiKey', '')).resolves.toBe('');
 		await expect(storageGet('aiModel', '')).resolves.toBe('next-proxy-model');
 		await expect(storageGet('customAiUrl', '')).resolves.toBe('https://custom.example/v1');
-		await expect(storageGet('customAiToken', '')).resolves.toBe('next-custom-token');
+		await expect(credentialGet('customAiToken')).resolves.toBe('next-custom-token');
+		await expect(storageGet('customAiToken', '')).resolves.toBe('');
 		await expect(storageGet('customAiModel', '')).resolves.toBe('next-custom-model');
 		await expect(storageGet('autoSolveTests', false)).resolves.toBe(true);
 		await expect(storageGet(TEST_DATA_SHARING_STORAGE_KEY, false)).resolves.toBe(true);

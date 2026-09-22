@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 	}>(),
 	getCachedQuestion: vi.fn(),
 	submitSharedQuestions: vi.fn(),
+	mergeLocalAnswers: vi.fn(),
 }));
 
 vi.mock('../../contexts/SettingsContext', () => ({
@@ -30,12 +31,17 @@ vi.mock('../../api/fetch/submit-shared-questions', () => ({
 	submitSharedQuestions: mocks.submitSharedQuestions,
 }));
 
+vi.mock('../../utils/local-answer-db', () => ({
+	localAnswerDb: {merge: mocks.mergeLocalAnswers},
+}));
+
 beforeEach(() => {
 	document.body.innerHTML = '';
 	mocks.sharingEnabled = false;
 	mocks.setSharingEnabled.mockReset();
 	mocks.submitSharedQuestions.mockReset();
 	mocks.submitSharedQuestions.mockResolvedValue(undefined);
+	mocks.mergeLocalAnswers.mockReset().mockResolvedValue(undefined);
 	mocks.cacheQuestions.clear();
 	mocks.cacheQuestions.set('Первый вопрос', {
 		variants: ['A1', 'A2'],
@@ -169,6 +175,10 @@ describe('AnswerSharingLoader', () => {
 		expect(document.querySelector('.nmo-answer-sharing-mascot'))
 			.toHaveAttribute('src', 'chrome-extension://nmo-helper/icons/new_icon.png');
 		expect(mocks.submitSharedQuestions).not.toHaveBeenCalled();
+		expect(mocks.mergeLocalAnswers).toHaveBeenCalledWith([{
+			topic: 'Кардиология - 2025', question: 'Первый вопрос',
+			variants: ['A1', 'A2'], answers: ['A2'],
+		}]);
 	});
 
 	it('запоминает согласие и блокирует «Нет» при включённом запоминании', async () => {

@@ -4,6 +4,7 @@ import { storageGet, storageSet } from './utils';
 import { createPanel, initPanelBehavior } from './Panel';
 import { unlockPageInteractions } from './api/page-interaction-unlock';
 import {DEFAULT_AI_MODEL, normalizeAiModel} from './utils/constants';
+import {credentialGet} from './api/credential-storage';
 import {
 	AI_PROVIDER_STORAGE_KEY,
 	AUTO_SOLVE_DELAY_MAX_STORAGE_KEY,
@@ -82,10 +83,10 @@ unlockPageInteractions();
 		savedTop: await storageGet('panelTop', null),
 		savedMode,
 		savedAiProvider,
-		savedApiKey: await storageGet('apiKey', ''),
+		savedApiKey: await credentialGet('apiKey'),
 		savedModel,
 		savedCustomAiUrl: await storageGet('customAiUrl', ''),
-		savedCustomAiToken: await storageGet('customAiToken', ''),
+		savedCustomAiToken: await credentialGet('customAiToken'),
 		savedCustomAiModel: await storageGet('customAiModel', ''),
 		savedAutoSolveEnabled: await storageGet(AUTO_SOLVE_STORAGE_KEY, DEFAULT_AUTO_SOLVE_ENABLED),
 		savedAutoSolveMode: await storageGet(AUTO_SOLVE_MODE_STORAGE_KEY, undefined),

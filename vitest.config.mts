@@ -7,8 +7,5 @@ export default defineConfig({
 		setupFiles: ['./src/tests-setup.ts'],
 		include: ['src/**/*.test.{ts,tsx}'],
 	},
-	esbuild: {
-		jsx: 'automatic',
-		jsxImportSource: 'react',
-	},
 });
+

@@ -25,6 +25,15 @@ function copyDir(source, destination) {
   }
 }
 
+function removeTree(target) {
+  const stat = fs.lstatSync(target);
+  if (stat.isSymbolicLink()) throw new Error(`Refusing to delete symlink: ${target}`);
+  if (stat.isDirectory()) {
+    for (const entry of fs.readdirSync(target)) removeTree(path.join(target, entry));
+    fs.rmdirSync(target);
+  } else fs.unlinkSync(target);
+}
+
 if (!process.argv.includes('--skip-build')) run(process.execPath, [path.join(root, 'build.js')]);
 fs.mkdirSync(releases, {recursive: true});
 const staging = fs.mkdtempSync(path.join(releases, '.linux-'));
@@ -48,5 +57,5 @@ try {
   if (!relative.startsWith('.linux-') || relative.includes(path.sep) || path.isAbsolute(relative)) {
     throw new Error('Unsafe staging directory');
   }
-  fs.rmSync(staging, {recursive: true, force: true});
+  removeTree(staging);
 }

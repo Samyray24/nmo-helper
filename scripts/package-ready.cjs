@@ -14,9 +14,31 @@ function assertInside(base, target) {
   }
 }
 
+function removeTree(target) {
+  if (!fs.existsSync(target)) return;
+  const stat = fs.lstatSync(target);
+  if (stat.isSymbolicLink()) throw new Error(`Refusing to delete symlink: ${target}`);
+  if (stat.isDirectory()) {
+    for (const entry of fs.readdirSync(target)) removeTree(path.join(target, entry));
+    fs.rmdirSync(target);
+  } else {
+    fs.unlinkSync(target);
+  }
+}
+
+function cleanupStagingDirectories() {
+  if (!fs.existsSync(releases)) return;
+  for (const entry of fs.readdirSync(releases, {withFileTypes: true})) {
+    if (!entry.isDirectory() || (!entry.name.startsWith('.linux-') && !entry.name.startsWith('.yandex-'))) continue;
+    const target = path.join(releases, entry.name);
+    assertInside(releases, target);
+    removeTree(target);
+  }
+}
+
 function resetDirectory(target, source) {
   assertInside(readyRoot, target);
-  if (fs.existsSync(target)) fs.rmSync(target, {recursive: true, force: true});
+  if (fs.existsSync(target)) removeTree(target);
   copyDirectory(source, target);
 }
 
@@ -45,8 +67,9 @@ function replacePackage(directory, sourceName, targetName, cleanup = true) {
   assertInside(readyRoot, directory);
   if (cleanup) {
     for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
-      if (entry.isFile() && /^NMO Helper \d+\.\d+\.\d+ - .+\.(?:zip|xpi|crx|tar\.gz)$/.test(entry.name)) {
-        fs.rmSync(path.join(directory, entry.name));
+      if (entry.isFile() && /^NMO Helper [0-9]+[.][0-9]+[.][0-9]+ - /.test(entry.name)
+        && ['.zip', '.xpi', '.crx', '.tar.gz'].some(extension => entry.name.endsWith(extension))) {
+        fs.unlinkSync(path.join(directory, entry.name));
       }
     }
   }
@@ -61,6 +84,8 @@ const linuxFirefox = path.join(readyRoot, '02 - Linux', '02 - Firefox совре
 const linuxChromium = path.join(readyRoot, '02 - Linux', '03 - Chromium Chrome Edge Brave Opera Vivaldi');
 const safari = path.join(readyRoot, '03 - macOS', '01 - Safari - исходники для Xcode');
 const all = path.join(readyRoot, '04 - Один архив со всем');
+
+cleanupStagingDirectories();
 
 resetDirectory(path.join(winChromium, 'Распакованное расширение'), path.join(root, 'dist', 'chrome'));
 resetDirectory(path.join(winFirefox, 'Распакованное расширение'), path.join(root, 'dist', 'firefox'));
@@ -96,11 +121,11 @@ fs.writeFileSync(hashFile, hashes.join('\n') + '\n');
 
 for (const entry of fs.readdirSync(releases, {withFileTypes: true})) {
   if (!entry.isFile()) continue;
-  const versionMatch = entry.name.match(/(\d+\.\d+\.\d+)/);
+  const versionMatch = entry.name.match(/([0-9]+[.][0-9]+[.][0-9]+)/);
   if (versionMatch && versionMatch[1] !== version && /^(?:nmo-helper-|SHA256SUMS-)/.test(entry.name)) {
     const file = path.join(releases, entry.name);
     assertInside(releases, file);
-    fs.rmSync(file);
+    fs.unlinkSync(file);
   }
 }
 

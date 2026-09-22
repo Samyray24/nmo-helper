@@ -2,6 +2,7 @@ import React, {createContext, useContext, useState} from 'react';
 import {storageSet} from '../utils';
 import type {AiProvider, AutoSolveMode, IExtensionState} from '../types';
 import {answerCache} from '../utils/answer-cache';
+import {credentialSet} from '../api/credential-storage';
 
 export const AI_PROVIDER_STORAGE_KEY = 'aiProvider';
 export const DEFAULT_AI_PROVIDER: AiProvider = 'free';
@@ -119,7 +120,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren<ISettingsProvide
 	const setApiKey = (nextApiKey: string): void => {
 		if (nextApiKey !== apiKey) answerCache.clear();
 		setApiKeyRaw(nextApiKey);
-		storageSet('apiKey', nextApiKey);
+		void credentialSet('apiKey', nextApiKey);
 	};
 
 	const setAiModel = (model: string): void => {
@@ -137,7 +138,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren<ISettingsProvide
 	const setCustomAiToken = (token: string): void => {
 		if (token !== customAiToken) answerCache.clear();
 		setCustomAiTokenRaw(token);
-		storageSet('customAiToken', token);
+		void credentialSet('customAiToken', token);
 	};
 
 	const setCustomAiModel = (model: string): void => {

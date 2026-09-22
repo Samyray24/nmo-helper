@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import cn from 'classnames';
 import './styles.scss';
 import {IconCheck, IconRefresh} from '../icons';
@@ -15,6 +15,8 @@ interface IProps {
 const VersionCheck: React.FC<IProps> = ({onOutdated}) => {
 	const [state, setState] = useState<State>('idle');
 	const [hover, setHover] = useState(false);
+	const onOutdatedRef = useRef(onOutdated);
+	onOutdatedRef.current = onOutdated;
 
 	// авто-проверка при mount — кэш 6ч на клиенте, реального запроса почти не будет
 	useEffect(() => {
@@ -23,7 +25,7 @@ const VersionCheck: React.FC<IProps> = ({onOutdated}) => {
 			if (cancelled) return;
 			if (isOutdated(info)) {
 				setState('outdated');
-				onOutdated?.(info);
+				onOutdatedRef.current?.(info);
 			}
 		}).catch(() => { /* молча — UI не показывает ошибки */ });
 		return () => { cancelled = true; };
