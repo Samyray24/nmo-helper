@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useSettings} from '../../contexts/SettingsContext';
 import './styles.scss';
 
@@ -18,8 +18,18 @@ const ModalAnswerSharing: React.FC<IModalAnswerSharingProps> = ({questionCount, 
 		onChange(save);
 	};
 
+	useEffect(() => {
+		const closeOnEscape = (event: KeyboardEvent): void => {
+			if (event.key === 'Escape') handleChange(false);
+		};
+		document.addEventListener('keydown', closeOnEscape);
+		return () => document.removeEventListener('keydown', closeOnEscape);
+	});
+
 	return (
-		<div className="nmo-answer-sharing-backdrop">
+		<div className="nmo-answer-sharing-backdrop" onMouseDown={event => {
+			if (event.target === event.currentTarget) handleChange(false);
+		}}>
 			<section
 				className="nmo-answer-sharing-dialog nmo-fade-up"
 				role="dialog"

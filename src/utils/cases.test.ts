@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { findAnswers, type QaCaseModel } from './cases';
 import {extractFirstCases, extractSecondCases} from './extractors';
 
+describe('findAnswers — источник совпадения', () => {
+	it('возвращает вопрос источника, который был выбран', () => {
+		const model: QaCaseModel[] = [{question: 'Вопрос из базы', variants: ['a', 'b'], answers: ['b'], idx: 0}];
+		expect(findAnswers(model, 'Вопрос из базы', ['a', 'b'])?.matchedQuestion).toBe('Вопрос из базы');
+	});
+});
+
 /**
  * jsdom не поддерживает innerText, поэтому патчим через textContent
  * (то же самое, что и в parsers.test.ts).

@@ -1,6 +1,6 @@
 import type { ISourceKey } from '../types';
 import { normalizeDashes, stripQuotes } from './text';
-import {FIRST_ANSWER_SOURCE_HOST, NMO_API_HOST, SECOND_ANSWER_SOURCE_HOST, SIMILARITY_THRESHOLD, THIRD_ANSWER_SOURCE_HOST} from './constants';
+import {ADDITIONAL_SOURCES, FIRST_ANSWER_SOURCE_HOST, NMO_API_HOST, SECOND_ANSWER_SOURCE_HOST, SIMILARITY_THRESHOLD, THIRD_ANSWER_SOURCE_HOST} from './constants';
 
 /**
  * Определяет, к какому из поддерживаемых сайтов-источников относится URL.
@@ -9,11 +9,16 @@ import {FIRST_ANSWER_SOURCE_HOST, NMO_API_HOST, SECOND_ANSWER_SOURCE_HOST, SIMIL
  * @returns Ключ источника или `null`, если домен не поддерживается.
  */
 export function detectSource(url: string): ISourceKey | null {
-	if (url.includes(NMO_API_HOST)) return 'nmo-helper';
-	if (url.includes(FIRST_ANSWER_SOURCE_HOST)) return 'first';
-	if (url.includes(SECOND_ANSWER_SOURCE_HOST)) return 'second';
-	if (url.includes(THIRD_ANSWER_SOURCE_HOST)) return 'third';
-	return null;
+	let parsed: URL;
+	try { parsed = new URL(url); } catch { return null; }
+	if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+	const host = parsed.hostname;
+	const matches = (sourceHost: string) => host === sourceHost || host === `www.${sourceHost}`;
+	if (matches(NMO_API_HOST)) return 'nmo-helper';
+	if (matches(FIRST_ANSWER_SOURCE_HOST)) return 'first';
+	if (matches(SECOND_ANSWER_SOURCE_HOST)) return 'second';
+	if (matches(THIRD_ANSWER_SOURCE_HOST)) return 'third';
+	return ADDITIONAL_SOURCES.find(source => matches(source.host))?.key ?? null;
 }
 
 /**

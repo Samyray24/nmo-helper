@@ -1,0 +1,47 @@
+@use '../../vars' as *;
+
+.nmo-base-section { color: $text-2; }
+
+.nmo-base-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+
+  > div {
+    padding: 10px;
+    border: 1px solid $border-soft;
+    border-radius: $r-md;
+    background: $bg-input;
+  }
+
+  strong { display: block; color: $text; font-size: 17px; }
+  span { display: block; margin-top: 2px; color: $text-3; font-size: $fs-sm; }
+}
+
+.nmo-base-note { margin: 10px 0; color: $text-3; font-size: $fs-sm; line-height: 1.4; }
+.nmo-base-file { display: none; }
+
+.nmo-base-file-button,
+.nmo-base-actions button {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid $border;
+  border-radius: $r-sm;
+  background: $bg-chip;
+  color: $text-2;
+  font: inherit;
+  cursor: pointer;
+}
+
+.nmo-base-file-button { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nmo-base-actions { display: flex; gap: 7px; margin-top: 8px; }
+.nmo-base-actions.vertical { display: grid; }
+.nmo-base-actions button:hover:not(:disabled) { color: $text; background: $bg-chip-hover; }
+.nmo-base-actions button:disabled { opacity: .45; cursor: default; }
+.nmo-base-actions button.danger { color: $danger-text; }
+.nmo-base-message { margin-top: 8px; color: $text-2; font-size: $fs-sm; }
+.nmo-base-details { margin-top: 10px; font-size: $fs-sm; }
+.nmo-base-details summary { color: $text-2; cursor: pointer; }
+.nmo-base-unknown { max-height: 150px; margin-top: 7px; overflow: auto; }
+.nmo-base-unknown div { padding: 6px 0; border-top: 1px solid $border-soft; line-height: 1.35; }
+.nmo-base-backend { margin-top: 10px; color: $text-disabled; font-size: $fs-xs; }

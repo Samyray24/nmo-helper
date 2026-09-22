@@ -5,6 +5,7 @@
  */
 
 import {NMO_API_HOST} from '../../utils/constants';
+import {diagnostics} from '../../utils/diagnostics';
 
 /** Точные пути NMO API, для которых разрешено создавать подпись. */
 const PROTECTED_NMO_API_PATHS = new Set(['/api/nmo/topics', '/api/nmo/topic']);
@@ -71,6 +72,7 @@ export function isProtectedNmoApiRequest(value: string): boolean {
  */
 export function fetchViaBackground(url: string, options: IRequestOptions = {}): Promise<IRequestResponse> {
 	return new Promise(resolve => {
+		const startedAt = Date.now();
 		try {
 			chrome.runtime.sendMessage({
 				action: 'fetch',
@@ -83,13 +85,18 @@ export function fetchViaBackground(url: string, options: IRequestOptions = {}): 
 			}, (response: IRequestResponse | undefined) => {
 				const runtimeError = getRuntimeErrorMessage();
 				if (runtimeError) {
-					resolve(requestFailure(runtimeError));
+					const failure = requestFailure(runtimeError);
+					diagnostics.recordNetwork(url, 0, Date.now() - startedAt, true);
+					resolve(failure);
 					return;
 				}
 
-				resolve(response ?? requestFailure('Background did not return a response.'));
+				const result = response ?? requestFailure('Background did not return a response.');
+				diagnostics.recordNetwork(url, result.status, Date.now() - startedAt, result.error);
+				resolve(result);
 			});
 		} catch (error) {
+			diagnostics.recordNetwork(url, 0, Date.now() - startedAt, true);
 			resolve(requestFailure(getErrorMessage(error)));
 		}
 	});

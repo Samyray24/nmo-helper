@@ -4,6 +4,9 @@ import {NMO_API_TOPIC_ENDPOINT} from '../../utils/constants';
 import type {ISearchResult} from '../../types';
 import VariantLoader from './VariantLoader';
 
+const additional = vi.hoisted(() => ({search: vi.fn()}));
+vi.mock('../../api/fetch/additional-sources', () => ({searchAdditionalSource: additional.search}));
+
 const mocks = vi.hoisted(() => ({
 	searchSecondarySource: vi.fn(),
 	searchFirstSource: vi.fn(),
@@ -20,6 +23,7 @@ vi.mock('../../api/fetch/search-variant-sources', () => ({
 
 describe('VariantLoader', () => {
 	beforeEach(() => {
+		additional.search.mockReset().mockResolvedValue([]);
 		mocks.searchSecondarySource.mockReset().mockResolvedValue([]);
 		mocks.searchFirstSource.mockReset().mockResolvedValue([]);
 		mocks.searchNmoSource.mockReset().mockResolvedValue([]);
@@ -103,5 +107,20 @@ describe('VariantLoader', () => {
 				data: [],
 			});
 		});
+	});
+
+	it('в ручном поиске объединяет результаты пяти новых баз', async () => {
+		additional.search.mockImplementation(async (_query, source) => [{source, title: 'Новая тема', url: `https://${source}.ru/test`}]);
+		const onChange = vi.fn();
+		render(<VariantLoader text="Тема" onChange={onChange}/>);
+		await waitFor(() => expect(onChange.mock.lastCall?.[0].data).toHaveLength(5));
+		expect(additional.search).toHaveBeenCalledTimes(5);
+	});
+
+	it('первый этап авто-поиска не запрашивает дополнительные базы', async () => {
+		const onChange = vi.fn();
+		render(<VariantLoader text="Тема" includeAdditional={false} onChange={onChange}/>);
+		await waitFor(() => expect(onChange.mock.lastCall?.[0].loading).toBe(false));
+		expect(additional.search).not.toHaveBeenCalled();
 	});
 });

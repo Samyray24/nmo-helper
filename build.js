@@ -11,6 +11,7 @@ const BROWSERS = [
   { name: 'chrome', manifest: 'manifest.chrome.json' },
   { name: 'firefox', manifest: 'manifest.firefox.json' },             // приватный .xpi (NMO Helper, id=nmo-helper@extension)
   { name: 'firefox-store', manifest: 'manifest.firefox-store.json' }, // для Firefox Add-ons (NMO-Helper, id=nmo-helper-amo@extension)
+  { name: 'firefox-legacy', manifest: 'manifest.firefox-legacy.json', target: 'firefox102' },
 ];
 
 function copyDir(src, dest) {
@@ -39,8 +40,9 @@ async function build() {
       bundle: true,
       minify: !WATCH,
       format: 'iife',
-      target: 'es2020',
+      target: browser.target || 'es2020',
       charset: 'utf8',
+      legalComments: 'none',
       define: { __DEV__: WATCH ? 'true' : 'false' },
       jsx: 'automatic',
       jsxImportSource: 'react',
@@ -122,9 +124,8 @@ async function build() {
       path.join(outDir, 'pdf.worker.min.mjs')
     );
 
-    // Подписанный .xpi (firefox_nmo_helper.xpi) лежит в корне репо и
-    // распространяется как отдельный артефакт релиза. В dist/ не копируем —
-    // иначе при упаковке firefox-зипа он попадает внутрь и раздувает его.
+		// Подписанные Firefox-пакеты выпускаются отдельно после проверки Mozilla.
+		// В dist/ хранятся только актуальные локальные сборки.
   }
 
   if (WATCH) {

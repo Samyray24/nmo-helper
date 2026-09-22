@@ -10,6 +10,7 @@ import {IconPlay} from '../../../icons';
 import InlineToast from '../../../ui/InlineToast';
 import ThinkingStrip from '../../../ui/ThinkingStrip';
 import {statusToToast} from '../../utils';
+import {ensureHostPermission} from '../../../../api/host-permissions';
 
 interface ICustomEndpointProps {
 	readonly onBusyChange: (busy: boolean) => void;
@@ -41,6 +42,7 @@ const CustomEndpoint: React.FC<ICustomEndpointProps> = ({onBusyChange}) => {
 		setStatus({title: StatusTitle.CHECKING_KEY, status: Status.LOADING});
 
 		try {
+			if (!await ensureHostPermission(customAiUrl.trim())) throw new Error('нет разрешения для этого API endpoint');
 			await validateApiKey(customAiToken, customAiModel.trim(), customAiUrl.trim());
 		} catch (error) {
 			setStatus({title: (error as Error).message, status: Status.ERR});

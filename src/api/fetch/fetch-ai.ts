@@ -17,8 +17,8 @@ export interface IAiRequestOptions {
  * возвращает номера правильных вариантов.
  *
  * Модель получает system-prompt «ты врач-эксперт по теме X» и просит вернуть
- * номера ответов через запятую. Регулярка из ответа достаёт все числа, каждое
- * уменьшается на 1 — чтобы попасть в 0-индексированный массив `options`.
+ * номера ответов через запятую. Принимается только список допустимых номеров;
+ * пояснения и несколько ответов на вопрос с одним выбором отклоняются.
  *
  * @param apiKey   Bearer-токен ProxyAPI или кастомного endpoint.
  * @param question Текст вопроса.
@@ -29,7 +29,7 @@ export interface IAiRequestOptions {
  * @param endpoint Необязательный кастомный URL (например, self-hosted OpenAI-совместимый).
  *                 Если указан, модель шлётся как есть, без префикса провайдера.
  * @returns Массив 0-индексированных номеров вариантов, помеченных моделью как правильные.
- *          Пустой массив — если в ответе не нашлось ни одной цифры.
+ *          Пустой массив — если формат или номера ответа недопустимы.
  * @throws {Error} `ошибка сети` — сетевой сбой.
  * @throws {Error} `неверный API-ключ` — HTTP 401/403.
  * @throws {Error} `нет средств на балансе` — HTTP 402.
@@ -48,7 +48,10 @@ export async function askAI(apiKey: string, question: string, options: string[],
 	}
 	if (res.status < 200 || res.status >= 400) handleError(res);
 
-	return normalizeAnswerIndexes(parseAnswer(res), options.length);
+	const parsed = parseAnswer(res);
+	if (parsed.some(index => !Number.isInteger(index) || index < 0 || index >= options.length)) return [];
+	const indexes = normalizeAnswerIndexes(parsed, options.length);
+	return isSingle && indexes.length !== 1 ? [] : indexes;
 }
 
 /**
@@ -74,7 +77,7 @@ export async function validateApiKey(apiKey: string, model: string, endpoint?: s
 			'Authorization': 'Bearer ' + apiKey,
 		},
 		body: JSON.stringify({
-			model: getApiModel(model),
+			model: endpoint ? model : getApiModel(model),
 			messages: [{ role: 'user', content: 'Ответь OK' }],
 			max_completion_tokens: 5,
 		}),
@@ -168,18 +171,18 @@ export function normalizeAnswerIndexes(indexes: number[], optionCount: number): 
 /**
  * Достаёт номера правильных ответов из успешного chat-completion.
  *
- * Берёт `choices[0].message.content`, вытягивает все подряд идущие цифры
- * регуляркой (так переносится и «2», и «1, 3», и «Ответы: 1 и 3») и сдвигает
- * в 0-индексированный массив. Если цифр нет — возвращает пустой массив
- * (вызывающий трактует это как «модель не смогла определиться»).
+ * Принимает только полный список номеров, в том числе с коротким префиксом
+ * «Ответы» или в блоке кода. Пояснения с числами отклоняются целиком.
  *
  * @param res Ответ от {@link fetchViaBackground} с 2xx-статусом.
  * @returns Массив 0-индексированных номеров вариантов.
  */
 export function parseAnswer(res: IRequestResponse): number[] {
 	const data = JSON.parse(res.text);
-	const text: string = data?.choices?.[0]?.message?.content || '';
-	const nums = text.match(/\d+/g);
-	if (!nums) return [];
-	return nums.map(n => parseInt(n, 10) - 1);
+	const content: unknown = data?.choices?.[0]?.message?.content;
+	if (typeof content !== 'string') return [];
+	const text = content.trim().replace(/^```(?:text)?\s*\n([\s\S]*?)\n```$/i, '$1').trim();
+	const list = text.match(/^(?:(?:правильн(?:ый|ые)\s+)?(?:ответы?|варианты?|answers?)\s*[:—-]?\s*)?(\d+(?:\s*(?:[,;]|и|and)\s*\d+)*)[.!]?$/i)?.[1];
+	if (!list) return [];
+	return (list.match(/\d+/g) ?? []).map(n => Number(n) - 1);
 }

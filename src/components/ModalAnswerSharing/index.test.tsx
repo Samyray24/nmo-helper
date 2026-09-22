@@ -60,6 +60,17 @@ describe('ModalAnswerSharing', () => {
 		expect(settings.setEnabled).not.toHaveBeenCalled();
 	});
 
+	it('закрывается по Escape и клику по свободному фону', () => {
+		const onChange = vi.fn();
+		render(<ModalAnswerSharing questionCount={2} onChange={onChange}/>);
+
+		fireEvent.keyDown(document, {key: 'Escape'});
+		fireEvent.mouseDown(document.querySelector<HTMLElement>('.nmo-answer-sharing-backdrop')!);
+
+		expect(onChange).toHaveBeenNthCalledWith(1, false);
+		expect(onChange).toHaveBeenNthCalledWith(2, false);
+	});
+
 	it('не позволяет отказаться при включённом запоминании', () => {
 		settings.enabled = true;
 		const onChange = vi.fn();

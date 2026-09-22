@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NMO-Helper",
-  "version": "5.0.0",
+  "version": "5.3.0",
   "description": "Автоподсветка правильных ответов на тестах НМО",
   "icons": {
     "16": "icons/icon16.png",
@@ -20,19 +20,55 @@
     "storage"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://edu.rosminzdrav.ru/*",
+    "https://*.edu.rosminzdrav.ru/*",
+    "https://nmo-helper.ru/*",
+    "https://*.nmo-helper.ru/*",
+    "https://rosmedicinfo.ru/*",
+    "https://*.rosmedicinfo.ru/*",
+    "https://24forcare.com/*",
+    "https://*.24forcare.com/*",
+    "https://testotvet.com/*",
+    "https://*.testotvet.com/*",
+    "https://reshtestnmo.ru/*",
+    "https://*.reshtestnmo.ru/*",
+    "https://otvnmo.ru/*",
+    "https://*.otvnmo.ru/*",
+    "https://test-nmo.ru/*",
+    "https://*.test-nmo.ru/*",
+    "https://pro-nmo.ru/*",
+    "https://*.pro-nmo.ru/*",
+    "https://tests-nmo.ru/*",
+    "https://*.tests-nmo.ru/*",
+    "https://openai.api.proxyapi.ru/*",
+    "https://llama-3-3-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/*",
+    "https://oai.aihorde.net/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
   "web_accessible_resources": [
     {
-      "resources": ["pdf.worker.min.mjs"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "pdf.worker.min.mjs"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     },
     {
-      "resources": ["icons/new_icon.png"],
-      "matches": ["https://edu.rosminzdrav.ru/*", "https://*.edu.rosminzdrav.ru/*"]
+      "resources": [
+        "icons/new_icon.png"
+      ],
+      "matches": [
+        "https://edu.rosminzdrav.ru/*",
+        "https://*.edu.rosminzdrav.ru/*"
+      ]
     }
   ],
   "content_scripts": [
@@ -41,8 +77,12 @@
         "https://edu.rosminzdrav.ru/*",
         "https://*.edu.rosminzdrav.ru/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -56,7 +96,9 @@
           "searchTerms",
           "websiteContent"
         ],
-        "optional": ["technicalAndInteraction"]
+        "optional": [
+          "technicalAndInteraction"
+        ]
       }
     }
   }

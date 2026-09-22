@@ -5,6 +5,7 @@
 
 /** Доступные варианты подключения AI. */
 export type AiProvider = 'free' | 'proxy' | 'custom';
+export type AutoSolveMode = 'highlight' | 'select' | 'full';
 
 /** Раздел панели и, если он есть, активный подраздел для баг-репорта. */
 export type BugReportMode =
@@ -12,7 +13,8 @@ export type BugReportMode =
 	| 'sites:search'
 	| 'sites:url'
 	| `ai:${AiProvider}`
-	| 'pdf';
+	| 'pdf'
+	| 'base';
 
 /** Сохранённое состояние панели расширения из chrome.storage */
 export interface IExtensionState {
@@ -40,6 +42,11 @@ export interface IExtensionState {
   readonly savedCustomAiModel: string;
   /** Автоматически отмечать найденные ответы */
   readonly savedAutoSolveEnabled: boolean;
+  /** Новый трёхрежимный вариант автоматизации; отсутствие означает миграцию старой настройки. */
+  readonly savedAutoSolveMode?: AutoSolveMode;
+  readonly savedConfidenceThreshold?: number;
+  readonly savedAiFallbackEnabled?: boolean;
+  readonly savedRecoveryEnabled?: boolean;
   /** Минимальный интервал автопрохождения вопроса, секунды */
   readonly savedAutoSolveDelayMinSeconds: number;
   /** Максимальный интервал автопрохождения вопроса, секунды */
@@ -61,7 +68,8 @@ export interface IAiModel {
 }
 
 /** Ключ источника ответов */
-export type ISourceKey = 'first' | 'second' | 'third' | 'nmo-helper';
+export type AdditionalSourceKey = 'reshtestnmo' | 'otvnmo' | 'test-nmo' | 'pro-nmo' | 'tests-nmo';
+export type ISourceKey = 'first' | 'second' | 'third' | 'nmo-helper' | AdditionalSourceKey;
 
 /** Найденный вариант источника ответов. */
 export interface ISearchResult {

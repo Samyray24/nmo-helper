@@ -1,7 +1,7 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import './styles.scss';
 import {usePanelStatus} from '../../contexts/PanelStatusContext';
-import {useQuestionFinder} from '../../contexts/QuestionFinderContext';
+import {answerCache} from '../../utils/answer-cache';
 import {usePdfScore} from '../../contexts/PdfScoreContext';
 import {Status} from '../../types';
 import {IconFile, IconClose, IconWarn} from '../icons';
@@ -13,8 +13,7 @@ import PdfSourceViewer from './components/PdfSourceViewer';
 const SectionPdf: React.FC = (): React.JSX.Element => {
 	// context
 	const {status, setStatus} = usePanelStatus();
-	const {topic, question, variants} = useQuestionFinder();
-	const {clearPdfScore} = usePdfScore();
+	const {clearPdfScores} = usePdfScore();
 	// state
 	const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
 	const [fileName, setFileName] = useState<string | null>(null);
@@ -22,6 +21,7 @@ const SectionPdf: React.FC = (): React.JSX.Element => {
 	const fileRef = useRef<HTMLInputElement>(null);
 
 	const _updateLoader = useCallback((state: IPdfLoaderState) => setProcessing(state.processing), []);
+	useEffect(() => { clearPdfScores(); }, [clearPdfScores]);
 
 	const _handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -32,6 +32,8 @@ const SectionPdf: React.FC = (): React.JSX.Element => {
 		}
 		const reader = new FileReader();
 		reader.onload = () => {
+			answerCache.clear();
+			clearPdfScores();
 			setPdfData((reader.result as ArrayBuffer).slice(0));
 			setFileName(file.name);
 			setStatus({title: 'PDF загружен', status: Status.OK});
@@ -41,7 +43,8 @@ const SectionPdf: React.FC = (): React.JSX.Element => {
 	};
 
 	const _clearPdf = (): void => {
-		clearPdfScore(topic, question, variants);
+		answerCache.clear();
+		clearPdfScores();
 		setPdfData(null);
 		setFileName(null);
 		setProcessing(false);
@@ -89,7 +92,7 @@ const SectionPdf: React.FC = (): React.JSX.Element => {
 						<div className="nmo-pdf-loaded">
 							<IconFile size={14}/>
 							<span className="nmo-pdf-name" title={fileName}>{fileName}</span>
-							<button type="button" className="nmo-icon-btn" disabled={processing} onClick={_clearPdf}>
+							<button type="button" aria-label="Удалить PDF" className="nmo-icon-btn" disabled={processing} onClick={_clearPdf}>
 								<IconClose size={12}/>
 							</button>
 						</div>

@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import cn from 'classnames';
 import './styles.scss';
 import {usePanelStatus} from '../../contexts/PanelStatusContext';
 import {useQuestionFinder} from '../../contexts/QuestionFinderContext';
@@ -57,6 +58,8 @@ const SectionSites: React.FC<{initialUrl: string}> = ({initialUrl}) => {
 	};
 
 	const _onSelectResult = (result: ISearchResult): void => {
+		answerCache.clear();
+		setAnswerModel({loading: false, error: null, data: null});
 		setUrlRaw(result.url);
 		// Короткоживущий URL серверного API не сохраняем.
 		if (result.source !== 'nmo-helper') storageSet('customUrl', result.url);
@@ -64,6 +67,7 @@ const SectionSites: React.FC<{initialUrl: string}> = ({initialUrl}) => {
 	};
 
 	const _onStop = (): void => {
+		answerCache.clear();
 		setActiveUrl('');
 		setAnswerModel({loading: false, error: null, data: null});
 		setStatus({title: StatusTitle.STOPPED, status: Status.IDLE});
@@ -81,7 +85,7 @@ const SectionSites: React.FC<{initialUrl: string}> = ({initialUrl}) => {
 		if (!found) return setStatus({title: StatusTitle.ANSWER_NOT_FOUND, status: Status.WARN});
 		if (!found.answers.length) return setStatus({title: StatusTitle.ANSWER_MISMATCH, status: Status.WARN});
 
-		answerCache.set(topic ?? '', question, variants, found.answers);
+		answerCache.set(topic ?? '', question, variants, found.answers, found.score);
 
 		const label = SOURCE_DETAILS[source].label;
 
@@ -112,7 +116,7 @@ const SectionSites: React.FC<{initialUrl: string}> = ({initialUrl}) => {
 	if (answerModel.loading) searchButtonText = 'Загружаю ответы…';
 
 	return (
-		<div className="nmo-section">
+		<div className={cn('nmo-section', {'nmo-section-with-footer': isRunning})}>
 			<AnswerLoader url={activeUrl} onChange={_updateHtml}/>
 			<VariantLoader text={activeSearch} onChange={_updateSearchUrl}/>
 

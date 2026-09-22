@@ -6,10 +6,15 @@ const context = vi.hoisted(() => ({
 	enabled: true,
 	actions: null as HTMLElement | null,
 	finishButton: null as HTMLElement | null,
+	autoStatus: {phase: 'waiting', message: 'Выбираю ответ через', secondsRemaining: 3},
 }));
 
 vi.mock('../../contexts/SettingsContext', () => ({
 	useSettings: () => ({autoSolve: {enabled: context.enabled}}),
+}));
+
+vi.mock('../../contexts/AutoSolveStatusContext', () => ({
+	useAutoSolveStatus: () => ({status: context.autoStatus}),
 }));
 
 vi.mock('../../utils', () => ({
@@ -42,7 +47,7 @@ describe('QuizActionsStatus', () => {
 		expect(host).not.toBeNull();
 		expect(finishButton.nextSibling).toBe(host);
 		expect(host?.nextSibling).toBe(sibling);
-		expect(screen.getByText('вкл')).toBeInTheDocument();
+		expect(screen.getByText('3 сек.')).toBeInTheDocument();
 		expect(host?.querySelector('[aria-live="polite"]')).toBeInTheDocument();
 	});
 

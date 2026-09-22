@@ -231,7 +231,7 @@ describe('getThirdAnswers', () => {
 		const model = await getThirdAnswers(`${THIRD_BASE_URL}/test-medik/nmo/topic.html`);
 		const found = findAnswers(model, 'Что выбрать?', ['Третий', 'Второй', 'Первый']);
 
-		expect(found).toEqual({answers: ['Второй'], score: 1});
+		expect(found).toEqual({answers: ['Второй'], score: 1, matchedQuestion: 'Что выбрать?'});
 	});
 
 	it('считает отсутствие дополнительных страниц допустимым', async () => {

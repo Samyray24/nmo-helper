@@ -1,0 +1,46 @@
+name: Проверка и сборка
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Получить код
+        uses: actions/checkout@v4
+
+      - name: Настроить Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Установить зависимости
+        run: npm ci
+
+      - name: Запустить тесты
+        run: npm test -- --reporter=dot
+
+      - name: Проверить TypeScript
+        run: npx tsc --noEmit
+
+      - name: Проверить код
+        run: npm run lint
+
+      - name: Собрать браузерные варианты
+        run: npm run build
+
+      - name: Сохранить тестовые сборки
+        uses: actions/upload-artifact@v4
+        with:
+          name: nmo-helper-${{ github.sha }}
+          path: dist/
+          retention-days: 14

@@ -1,23 +1,32 @@
 import {useEffect, useRef} from 'react';
+import {useAutoSolveStatus, type AutoSolvePhase} from '../../contexts/AutoSolveStatusContext';
 import {usePanelStatus} from '../../contexts/PanelStatusContext';
 import {useQuestionFinder} from '../../contexts/QuestionFinderContext';
 import {useSettings} from '../../contexts/SettingsContext';
 import {Status} from '../../types';
 import {
+	findCompletedQuizResults,
 	getAnswerClickTarget,
 	getAnswerInput,
 	getFinishQuizConfirmButton,
 	getNextQuestionButton,
+	getQuestionText,
 	getVariantElements,
+	isQuestionFinishButton,
 } from '../../utils';
+import {claimQuizFinishReload, clearStaleQuizFinishBlockers} from '../../api/quiz-finish-recovery';
 import {answerCache} from '../../utils/answer-cache';
+import {LOW_CONFIDENCE_THRESHOLD} from '../../utils/constants';
+import {quizSessionStore} from '../../utils/quiz-session-store';
 
 const MOUSE_IDLE_DELAY_MS = 1500;
-const NEXT_CLICK_DELAY_MS = 300;
-const AUTO_SOLVE_CHECK_INTERVAL_MS = 300;
+const AUTO_SOLVE_CHECK_INTERVAL_MS = 250;
 const MULTI_ANSWER_DOM_REFRESH_TIMEOUT_MS = 700;
-const MULTI_ANSWER_DOM_SETTLE_MS = 500;
+const MULTI_ANSWER_DOM_SETTLE_MS = 350;
+const FORWARD_BUTTON_TIMEOUT_MS = 5000;
+const QUESTION_CHANGE_TIMEOUT_MS = 8000;
 const FINISH_CONFIRM_TIMEOUT_MS = 5000;
+const FINISH_RESULTS_TIMEOUT_MS = 12_000;
 
 interface IPlannedAutoSolve {
 	readonly id: string;
@@ -25,21 +34,19 @@ interface IPlannedAutoSolve {
 	readonly runAt: number;
 }
 
-/**
- * Headless-компонент автоматического прохождения теста.
- *
- * Пока функция включена, компонент ждёт найденный в {@link answerCache} ответ,
- * отсутствие движения мыши и допустимый статус панели. После случайной задержки
- * он отмечает правильные варианты, переходит к следующему вопросу и при
- * необходимости подтверждает завершение теста.
- *
- * @returns `null`, так как компонент управляет только DOM страницы НМО.
- */
-const AutoSolveLoader = () => {
+type PublishStatus = (phase: AutoSolvePhase, message: string, secondsRemaining?: number | null) => void;
 
-	const {enabled: autoSolveEnabled, delayMinSeconds: autoSolveDelayMinSeconds, delayMaxSeconds: autoSolveDelayMaxSeconds} = useSettings().autoSolve;
+/** Управляет безопасным автоматическим выбором ответа и переходом вперёд. */
+const AutoSolveLoader = () => {
+	const autoSolveSettings = useSettings().autoSolve;
+	const mode = autoSolveSettings.mode ?? (autoSolveSettings.enabled ? 'full' : 'highlight');
+	const enabled = mode !== 'highlight';
+	const confidenceThreshold = autoSolveSettings.confidenceThreshold ?? LOW_CONFIDENCE_THRESHOLD;
+	const recoveryEnabled = autoSolveSettings.recoveryEnabled ?? true;
+	const {delayMinSeconds, delayMaxSeconds} = autoSolveSettings;
 	const {status} = usePanelStatus();
 	const {topic, question, variants, isSingle} = useQuestionFinder();
+	const {setStatus: setAutoSolveStatus} = useAutoSolveStatus();
 
 	const completedAnswerIdRef = useRef('');
 	const plannedAnswerRef = useRef<IPlannedAutoSolve | null>(null);
@@ -48,28 +55,17 @@ const AutoSolveLoader = () => {
 	const runningRef = useRef(false);
 
 	useEffect(() => {
-
-		/**
-		 * Приостанавливает запланированный автоответ до истечения периода
-		 * бездействия после последнего движения мыши.
-		 *
-		 * @returns Ничего не возвращает.
-		 */
 		const markMouseActive = (): void => {
 			mouseActiveRef.current = true;
 			plannedAnswerRef.current = null;
-
 			if (mouseIdleTimerRef.current !== null) window.clearTimeout(mouseIdleTimerRef.current);
-
 			mouseIdleTimerRef.current = window.setTimeout(() => {
 				mouseActiveRef.current = false;
 				mouseIdleTimerRef.current = null;
 			}, MOUSE_IDLE_DELAY_MS);
-
 		};
 
 		document.addEventListener('mousemove', markMouseActive);
-
 		return () => {
 			document.removeEventListener('mousemove', markMouseActive);
 			if (mouseIdleTimerRef.current !== null) window.clearTimeout(mouseIdleTimerRef.current);
@@ -77,320 +73,227 @@ const AutoSolveLoader = () => {
 	}, []);
 
 	useEffect(() => {
+		let disposed = false;
+		const publish: PublishStatus = (phase, message, secondsRemaining = null): void => {
+			if (!disposed) setAutoSolveStatus({phase, message, secondsRemaining});
+		};
 
 		const timer = window.setInterval(() => {
-
-			if (!autoSolveEnabled) {
+			if (!enabled) {
 				completedAnswerIdRef.current = '';
 				plannedAnswerRef.current = null;
+				publish('disabled', 'Автопрохождение выключено');
 				return;
 			}
-
-			if (!canAutoSolveWithStatus(status.status)) return plannedAnswerRef.current = null;
-			if (mouseActiveRef.current) return plannedAnswerRef.current = null;
-
 			if (runningRef.current) return;
 
-			if (!question || !variants.length) return plannedAnswerRef.current = null;
-
-
-			const cached = answerCache.get(topic ?? '', question, variants);
-
-			if (!cached?.idx.length) return plannedAnswerRef.current = null;
-
-
-			const answerId = `${cached.id}::${isSingle ? 'single' : 'multi'}`;
-
-			if (completedAnswerIdRef.current === answerId) return;
-
-			const planned = plannedAnswerRef.current;
-
-			if (!planned || planned.id !== answerId) {
-				plannedAnswerRef.current = {
-					id: answerId,
-					idx: [...cached.idx],
-					runAt: Date.now() + getRandomDelayMs(autoSolveDelayMinSeconds, autoSolveDelayMaxSeconds),
-				};
+			if (!canAutoSolveWithStatus(status.status)) {
+				plannedAnswerRef.current = null;
+				if (status.status === Status.LOADING) publish('idle', 'Жду результат поиска');
+				else if (status.status === Status.WARN || status.status === Status.ERR) publish('paused', 'Нужна ручная проверка');
+				else publish('idle', 'Жду подтверждённый ответ');
 				return;
 			}
 
-			if (Date.now() < planned.runAt) return;
+			if (mouseActiveRef.current) {
+				plannedAnswerRef.current = null;
+				publish('paused', 'Пауза после движения мыши');
+				return;
+			}
+
+			if (!question || !variants.length) {
+				plannedAnswerRef.current = null;
+				publish('idle', 'Жду вопрос на странице');
+				return;
+			}
+
+			const cached = answerCache.get(topic ?? '', question, variants);
+			if (!cached?.idx.length || cached.confidence < confidenceThreshold) {
+				plannedAnswerRef.current = null;
+				publish('idle', 'Жду подтверждённый ответ');
+				return;
+			}
+
+			const answerId = `${cached.id}::${isSingle ? 'single' : 'multi'}`;
+			if (completedAnswerIdRef.current === answerId) {
+				publish('idle', 'Ответ уже выбран');
+				return;
+			}
+
+			let planned = plannedAnswerRef.current;
+			if (!planned || planned.id !== answerId) {
+				planned = {
+					id: answerId,
+					idx: [...cached.idx],
+					runAt: Date.now() + getRandomDelayMs(delayMinSeconds, delayMaxSeconds),
+				};
+				plannedAnswerRef.current = planned;
+			}
+
+			const remainingMs = planned.runAt - Date.now();
+			if (remainingMs > 0) {
+				publish('waiting', 'Выбираю ответ через', Math.max(1, Math.ceil(remainingMs / 1000)));
+				return;
+			}
 
 			plannedAnswerRef.current = null;
 			completedAnswerIdRef.current = answerId;
 			runningRef.current = true;
+			publish('selecting', 'Выбираю правильный ответ');
 
-			void runAutoSolve(planned.idx).finally(() => runningRef.current = false);
-
+			void runAutoSolve(planned.idx, topic ?? '', question, variants, mode, recoveryEnabled, publish)
+				.then(result => {
+					if (result === 'finished') publish('complete', 'Тест завершён');
+					else if (result === 'reloading') publish('finishing', 'Обновляю страницу НМО');
+					else if (result === 'selected') publish('idle', 'Ответ выбран — переходите дальше');
+					else publish('idle', 'Следующий вопрос открыт');
+				})
+				.catch(error => {
+					completedAnswerIdRef.current = '';
+					publish('error', error instanceof Error ? error.message : 'Не удалось продолжить');
+				})
+				.finally(() => runningRef.current = false);
 		}, AUTO_SOLVE_CHECK_INTERVAL_MS);
 
-		return () => {window.clearInterval(timer);plannedAnswerRef.current = null;};
-	}, [
-		autoSolveEnabled,
-		autoSolveDelayMinSeconds,
-		autoSolveDelayMaxSeconds,
-		status.status,
-		status.title,
-		topic,
-		question,
-		variants,
-		isSingle,
-	]);
+		return () => {
+			disposed = true;
+			window.clearInterval(timer);
+			plannedAnswerRef.current = null;
+		};
+	}, [enabled, mode, confidenceThreshold, recoveryEnabled, delayMinSeconds, delayMaxSeconds, status.status, topic, question, variants, isSingle, setAutoSolveStatus]);
 
 	return null;
 };
 
 export default AutoSolveLoader;
 
-/**
- * Вычисляет случайную задержку запуска в заданном диапазоне.
- *
- * Нижняя граница ограничивается нулём и верхним значением, а результат
- * округляется до целого количества миллисекунд.
- *
- * @param minSeconds Минимальная задержка в секундах.
- * @param maxSeconds Максимальная задержка в секундах.
- * @returns Случайную задержку в миллисекундах, включая границы диапазона.
- */
 function getRandomDelayMs(minSeconds: number, maxSeconds: number): number {
 	const min = Math.max(0, Math.min(minSeconds, maxSeconds));
 	const max = Math.max(min, maxSeconds);
 	return Math.round((min + Math.random() * (max - min)) * 1000);
 }
 
-/**
- * Проверяет, разрешает ли текущий статус панели автоматический ответ.
- *
- * @param status Текущий статус панели поиска ответа.
- * @returns `true` для успешного результата или предупреждения.
- */
 function canAutoSolveWithStatus(status: typeof Status[keyof typeof Status]): boolean {
-	return status === Status.OK || status === Status.WARN;
+	return status === Status.OK;
 }
 
-/**
- * Выбирает правильные варианты и запускает переход к следующему вопросу.
- *
- * @param correctIndexes 0-индексированные позиции правильных вариантов.
- * @returns Промис, который завершается после обработки кнопки перехода.
- */
-async function runAutoSolve(correctIndexes: number[]): Promise<void> {
+async function runAutoSolve(correctIndexes: number[], topic: string, currentQuestion: string, variants: string[], mode: 'select' | 'full', recoveryEnabled: boolean, publish: PublishStatus): Promise<'selected' | 'next' | 'finished' | 'reloading'> {
+	if (recoveryEnabled && await quizSessionStore.wasProcessedRecently(topic, currentQuestion, variants)) {
+		throw new Error('Этот вопрос уже обработан — жду обновление страницы');
+	}
 	await clickAnswerIndexes(correctIndexes);
-	await wait(NEXT_CLICK_DELAY_MS);
-	await clickNextQuestionButton();
-}
+	if (recoveryEnabled) await quizSessionStore.markProcessed(topic, currentQuestion, variants);
+	if (mode === 'select') return 'selected';
+	publish('moving', 'Жду готовность кнопки перехода');
+	const button = await waitForForwardButton();
+	if (!button) throw new Error('Кнопка перехода не стала доступна');
 
-/**
- * Определяет тип текущего вопроса и выбирает переданные варианты ответа.
- *
- * Для вопроса с одним вариантом используется только первый индекс. Для вопроса
- * с несколькими вариантами состояние всех checkbox синхронизируется с ответом.
- *
- * @param correctIndexes 0-индексированные позиции правильных вариантов.
- * @returns Промис, который завершается после выбора вариантов.
- */
-async function clickAnswerIndexes(correctIndexes: number[]): Promise<void> {
-	const elements = getVariantElements();
-	if (!elements.length) return;
+	const shouldFinish = isQuestionFinishButton(button);
+	publish(shouldFinish ? 'finishing' : 'moving', shouldFinish ? 'Завершаю тест' : 'Перехожу к следующему вопросу');
+	button.click();
 
-	const controls = elements.map(getAnswerInput);
-	const isMultiChoice = controls.some(control => control?.type === 'checkbox');
+	if (shouldFinish) {
+		const confirmation = await waitForFinishConfirmButton();
+		if (confirmation && !isButtonDisabled(confirmation)) confirmation.click();
+		publish('finishing', 'Жду страницу результатов');
+		if (await waitUntil(() => findCompletedQuizResults() !== null, FINISH_RESULTS_TIMEOUT_MS)) return 'finished';
 
-	if (isMultiChoice) {
-		await clickMultiAnswerIndexes(correctIndexes);
-		return;
+		clearStaleQuizFinishBlockers();
+		if (recoveryEnabled && claimQuizFinishReload()) {
+			publish('finishing', 'Страница НМО не ответила — обновляю');
+			window.setTimeout(() => window.location.reload(), 0);
+			return 'reloading';
+		}
+		throw new Error('Страница НМО не ответила — обновите её вручную');
 	}
 
-	clickSingleAnswerIndex(correctIndexes[0]);
+	if (!await waitForQuestionChange(currentQuestion)) throw new Error('Следующий вопрос не загрузился — повторю попытку');
+	return 'next';
 }
 
-/**
- * Синхронизирует checkbox-варианты с набором правильных индексов.
- *
- * После каждого клика функция заново дожидается DOM страницы, поскольку портал
- * НМО может перерисовать список вариантов целиком.
- *
- * @param correctIndexes 0-индексированные позиции правильных вариантов.
- * @returns Промис, который завершается после проверки всех вариантов.
- */
+async function clickAnswerIndexes(correctIndexes: number[]): Promise<void> {
+	const elements = getVariantElements();
+	if (!elements.length) throw new Error('Варианты ответа не найдены');
+	const controls = elements.map(getAnswerInput);
+	if (controls.some(control => control?.type === 'checkbox')) return clickMultiAnswerIndexes(correctIndexes);
+	if (!clickSingleAnswerIndex(correctIndexes[0])) throw new Error('Не удалось выбрать ответ');
+}
+
 async function clickMultiAnswerIndexes(correctIndexes: number[]): Promise<void> {
 	const correct = new Set(correctIndexes);
 	const length = getVariantElements().length;
-
 	for (let index = 0; index < length; index += 1) {
 		const target = getAnswerTargetAt(index);
 		if (!target || target.control.type !== 'checkbox' || target.control.disabled) continue;
-
 		const shouldBeChecked = correct.has(index);
 		if (target.control.checked === shouldBeChecked) continue;
-
 		clickAnswerControl(target.control, target.variantElement);
 		await waitForAnswerDomRefresh(target.variantElement, index);
 	}
 }
 
-/**
- * Выбирает один radio-вариант ответа по его позиции.
- *
- * Если связанный `input` отсутствует, выполняется резервный клик по контейнеру
- * варианта.
- *
- * @param index 0-индексированная позиция правильного варианта.
- * @returns Ничего не возвращает.
- */
-function clickSingleAnswerIndex(index: number | undefined): void {
-	if (index === undefined) return;
-
+function clickSingleAnswerIndex(index: number | undefined): boolean {
+	if (index === undefined) return false;
 	const target = getAnswerTargetAt(index);
 	const control = target?.control ?? null;
-	if (target && control && !control.disabled && !control.checked) {
-		clickAnswerControl(control, target.variantElement);
-		return;
+	if (target && control && !control.disabled) {
+		if (!control.checked) clickAnswerControl(control, target.variantElement);
+		return true;
 	}
-
-	if (!control) getVariantElements()[index]?.click();
+	const variant = getVariantElements()[index];
+	if (!control && variant) {
+		variant.click();
+		return true;
+	}
+	return false;
 }
 
-/**
- * Находит актуальный DOM-контейнер варианта и связанный с ним элемент ввода.
- *
- * @param index 0-индексированная позиция варианта.
- * @returns Найденную пару элементов или `null`, если вариант недоступен.
- */
 function getAnswerTargetAt(index: number): {control: HTMLInputElement; variantElement: HTMLElement} | null {
 	const variantElement = getVariantElements()[index];
 	if (!variantElement) return null;
-
 	const control = getAnswerInput(variantElement);
-	if (!control) return null;
-
-	return {control, variantElement};
+	return control ? {control, variantElement} : null;
 }
 
-/**
- * Нажимает элемент ввода, используя кликабельную область варианта как fallback.
- *
- * Резервный клик выполняется только тогда, когда прямой клик по `input` не
- * изменил его состояние.
- *
- * @param control Элемент `radio` или `checkbox` варианта.
- * @param variantElement DOM-контейнер этого варианта.
- * @returns Ничего не возвращает.
- */
 function clickAnswerControl(control: HTMLInputElement, variantElement: HTMLElement): void {
 	const checkedBefore = control.checked;
 	control.click();
-
-	if (control.checked !== checkedBefore) return;
-
-	getAnswerClickTarget(variantElement).click();
+	if (control.checked === checkedBefore) getAnswerClickTarget(variantElement).click();
 }
 
-/**
- * Создаёт асинхронную паузу через браузерный таймер.
- *
- * @param ms Продолжительность паузы в миллисекундах.
- * @returns Промис, который разрешается после истечения таймера.
- */
 function wait(ms: number): Promise<void> {
 	return new Promise(resolve => window.setTimeout(resolve, ms));
 }
 
-/**
- * Ожидает замены варианта ответа в DOM после клика и даёт странице время
- * завершить перерисовку.
- *
- * Если замена не обнаружена, ожидание наблюдателя завершается по тайм-ауту.
- *
- * @param previousVariantElement Контейнер варианта до клика.
- * @param index Позиция варианта, для которой ожидается новый DOM-элемент.
- * @returns Промис, который завершается после обновления или тайм-аута и паузы стабилизации.
- */
 async function waitForAnswerDomRefresh(previousVariantElement: HTMLElement, index: number): Promise<void> {
-	await new Promise<void>(resolve => {
-		let done = false;
-		let timeout = 0;
-		let observer: MutationObserver | null = null;
-
-		/** Завершает ожидание, освобождает таймер и отключает наблюдатель. */
-		const finish = (): void => {
-			if (done) return;
-			done = true;
-			window.clearTimeout(timeout);
-			observer?.disconnect();
-			resolve();
-		};
-
-		/** Возвращает `true`, когда вариант по тому же индексу заменён в DOM. */
-		const isRefreshed = (): boolean => {
-			const currentVariantElement = getVariantElements()[index];
-			return !!currentVariantElement && currentVariantElement !== previousVariantElement;
-		};
-
-		observer = new MutationObserver(() => {
-			if (isRefreshed()) finish();
-		});
-		timeout = window.setTimeout(finish, MULTI_ANSWER_DOM_REFRESH_TIMEOUT_MS);
-
-		observer.observe(document.body, {childList: true, subtree: true});
-
-		if (isRefreshed()) finish();
-	});
-
+	await waitUntil(() => getVariantElements()[index] !== previousVariantElement, MULTI_ANSWER_DOM_REFRESH_TIMEOUT_MS);
 	await wait(MULTI_ANSWER_DOM_SETTLE_MS);
 }
 
-/**
- * Нажимает доступную кнопку перехода к следующему вопросу.
- *
- * Если кнопка завершает тест, после клика дополнительно ожидается модальное
- * подтверждение завершения.
- *
- * @returns Промис, который завершается после возможного подтверждения.
- */
-async function clickNextQuestionButton(): Promise<void> {
-	const button = getNextQuestionButton();
-	if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
-
-	const shouldConfirm = isQuestionFinishButton(button);
-	button.click();
-	if (shouldConfirm) await clickFinishConfirmIfShown();
+async function waitForForwardButton(): Promise<HTMLButtonElement | null> {
+	let button = getNextQuestionButton();
+	if (button && !isButtonDisabled(button)) return button;
+	const ready = await waitUntil(() => {
+		button = getNextQuestionButton();
+		return !!button && !isButtonDisabled(button);
+	}, FORWARD_BUTTON_TIMEOUT_MS);
+	return ready ? button : null;
 }
 
-/**
- * Ожидает кнопку подтверждения завершения теста и нажимает её, если она доступна.
- *
- * @returns Промис, который завершается после клика либо истечения тайм-аута.
- */
-async function clickFinishConfirmIfShown(): Promise<void> {
-	const button = await waitForFinishConfirmButton();
-	if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
-
-	button.click();
+function waitForQuestionChange(previousQuestion: string): Promise<boolean> {
+	return waitUntil(() => {
+		const current = getQuestionText();
+		return current === null || current.trim() !== previousQuestion.trim();
+	}, QUESTION_CHANGE_TIMEOUT_MS);
 }
 
-/**
- * Ищет кнопку подтверждения завершения теста в текущем или обновлённом DOM.
- *
- * @returns Промис с найденной кнопкой либо `null` после истечения тайм-аута.
- */
 function waitForFinishConfirmButton(): Promise<HTMLButtonElement | null> {
 	return new Promise(resolve => {
-		const existingButton = getFinishQuizConfirmButton();
-		if (existingButton) {
-			resolve(existingButton);
-			return;
-		}
-
+		const existing = getFinishQuizConfirmButton();
+		if (existing) return resolve(existing);
 		let done = false;
-		let timeout = 0;
 		let observer: MutationObserver | null = null;
-
-		/**
-		 * Завершает поиск и освобождает связанные с ним ресурсы.
-		 *
-		 * @param button Найденная кнопка или `null`, если поиск завершён по тайм-ауту.
-		 */
+		let timeout = 0;
 		const finish = (button: HTMLButtonElement | null): void => {
 			if (done) return;
 			done = true;
@@ -398,25 +301,24 @@ function waitForFinishConfirmButton(): Promise<HTMLButtonElement | null> {
 			observer?.disconnect();
 			resolve(button);
 		};
-
 		observer = new MutationObserver(() => {
 			const button = getFinishQuizConfirmButton();
 			if (button) finish(button);
 		});
 		timeout = window.setTimeout(() => finish(null), FINISH_CONFIRM_TIMEOUT_MS);
-
 		observer.observe(document.body, {childList: true, subtree: true});
 	});
 }
 
-/**
- * Проверяет, является ли кнопка навигации кнопкой завершения теста.
- *
- * @param button Проверяемая кнопка.
- * @returns `true`, если текст и положение кнопки соответствуют завершению теста.
- */
-function isQuestionFinishButton(button: HTMLButtonElement): boolean {
-	const text = button.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() ?? '';
-	return text.includes('завершить тестирование')
-		&& !!button.closest('.question-buttons');
+async function waitUntil(predicate: () => boolean, timeoutMs: number): Promise<boolean> {
+	const startedAt = Date.now();
+	while (Date.now() - startedAt < timeoutMs) {
+		if (predicate()) return true;
+		await wait(100);
+	}
+	return predicate();
+}
+
+function isButtonDisabled(button: HTMLButtonElement): boolean {
+	return button.disabled || button.getAttribute('aria-disabled') === 'true';
 }

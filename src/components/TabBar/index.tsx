@@ -4,7 +4,7 @@ import './styles.scss';
 import {usePanelUi} from '../../contexts/PanelUiContext';
 import {usePanelStatus} from '../../contexts/PanelStatusContext';
 import type {UiMode} from '../../contexts/PanelUiContext';
-import {IconBolt, IconBrain, IconGlobe, IconFile} from '../icons';
+import {IconBolt, IconBrain, IconGlobe, IconFile, IconDatabase} from '../icons';
 import {Status} from '../../types';
 
 const TABS: {mode: UiMode; label: string; Icon: React.FC<{size?: number}>}[] = [
@@ -12,6 +12,7 @@ const TABS: {mode: UiMode; label: string; Icon: React.FC<{size?: number}>}[] = [
 	{mode: 'sites', label: 'Сайты', Icon: IconGlobe},
 	{mode: 'ai',    label: 'AI',    Icon: IconBrain},
 	{mode: 'pdf',   label: 'PDF',   Icon: IconFile},
+	{mode: 'base',  label: 'База',  Icon: IconDatabase},
 ];
 
 const TabBar: React.FC = () => {

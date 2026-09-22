@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useSettings} from '../../contexts/SettingsContext';
+import {useAutoSolveStatus} from '../../contexts/AutoSolveStatusContext';
 import {getFinishQuizButton, getQuizActionsElement} from '../../utils';
 import './styles.scss';
 
@@ -8,6 +9,7 @@ const STATUS_HOST_ID = 'nmo-quiz-actions-status-host';
 
 const QuizActionsStatus: React.FC = () => {
 	const {enabled: autoSolveEnabled} = useSettings().autoSolve;
+	const {status} = useAutoSolveStatus();
 	const [host, setHost] = useState<HTMLElement | null>(null);
 
 	useEffect(() => {
@@ -58,13 +60,16 @@ const QuizActionsStatus: React.FC = () => {
 	}, [autoSolveEnabled]);
 
 	if (!host || !autoSolveEnabled) return null;
+	const value = status.secondsRemaining !== null
+		? `${status.secondsRemaining} сек.`
+		: status.message;
 
 	return createPortal(
 		<div className="nmo-quiz-actions-status" aria-live="polite">
-			<span className="nmo-quiz-actions-status-item on">
+			<span className={`nmo-quiz-actions-status-item phase-${status.phase}`}>
 				<span className="nmo-quiz-actions-status-dot"/>
 				<span className="nmo-quiz-actions-status-label">Автоответ</span>
-				<span className="nmo-quiz-actions-status-value">вкл</span>
+				<span className="nmo-quiz-actions-status-value">{value}</span>
 			</span>
 		</div>,
 		host

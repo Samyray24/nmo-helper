@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { storageSet } from '../utils';
 import type {IExtensionState} from '../types';
+import {answerCache} from '../utils/answer-cache';
 
-export type UiMode = 'sites' | 'ai' | 'auto' | 'pdf';
+export type UiMode = 'sites' | 'ai' | 'auto' | 'pdf' | 'base';
 
 interface IPanelUiState {
 	readonly collapsed: boolean;
@@ -17,7 +18,7 @@ interface IPanelUiProviderProps {
 
 const PanelUiContext = createContext<IPanelUiState>(null!);
 
-const VALID_MODES: UiMode[] = ['sites', 'ai', 'auto', 'pdf'];
+const VALID_MODES: UiMode[] = ['sites', 'ai', 'auto', 'pdf', 'base'];
 
 export function normalizeUiMode(mode: string): UiMode {
 	if (mode === 'ai-pro') return 'ai';
@@ -31,6 +32,7 @@ export const PanelUiProvider: React.FC<React.PropsWithChildren<IPanelUiProviderP
 	const setCollapsed = (v: boolean) => { setCollapsedRaw(v); storageSet('panelCollapsed', v); };
 
 	const setMode = (v: UiMode) => {
+		if (v !== mode) answerCache.clear();
 		setModeRaw(v);
 		storageSet('mode', v);
 	};

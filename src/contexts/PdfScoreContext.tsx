@@ -22,6 +22,7 @@ interface IPdfScoreContextState {
 	readonly getPdfScore: (topic: string | null, question: string | null, variants: string[]) => IPdfScoreModel | null;
 	readonly setPdfScore: (topic: string, question: string, variants: string[], scores: IPdfScoreVariant[], sources?: PredictionSources | null) => IPdfScoreModel;
 	readonly clearPdfScore: (topic: string | null, question: string | null, variants: string[]) => void;
+	readonly clearPdfScores: () => void;
 }
 
 type PdfScoreStore = Record<string, IPdfScoreModel>;
@@ -35,6 +36,7 @@ const EMPTY_CONTEXT: IPdfScoreContextState = {
 		updatedAt: Date.now(),
 	}),
 	clearPdfScore: () => undefined,
+	clearPdfScores: () => undefined,
 };
 
 const PdfScoreContext = createContext<IPdfScoreContextState>(EMPTY_CONTEXT);
@@ -75,11 +77,14 @@ export const PdfScoreProvider: React.FC<React.PropsWithChildren> = ({children}) 
 		});
 	}, []);
 
+	const clearPdfScores = useCallback(() => setScoresById({}), []);
+
 	const value = useMemo<IPdfScoreContextState>(() => ({
 		getPdfScore,
 		setPdfScore,
 		clearPdfScore,
-	}), [getPdfScore, setPdfScore, clearPdfScore]);
+		clearPdfScores,
+	}), [getPdfScore, setPdfScore, clearPdfScore, clearPdfScores]);
 
 	return (
 		<PdfScoreContext.Provider value={value}>

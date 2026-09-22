@@ -2,6 +2,37 @@ import { describe, it, expect } from 'vitest';
 import { AnswerCache, answerCache } from './answer-cache';
 
 describe('AnswerCache.set + get', () => {
+	it('удаляет только ответ указанного вопроса', () => {
+		const c = new AnswerCache();
+		c.set('Тема', 'Первый вопрос', ['A', 'B'], ['A']);
+		c.set('Тема', 'Второй вопрос', ['A', 'B'], ['B']);
+
+		expect(c.delete('Тема', 'Первый вопрос', ['A', 'B'])).toBe(true);
+		expect(c.get('Тема', 'Первый вопрос', ['A', 'B'])).toBeNull();
+		expect(c.get('Тема', 'Второй вопрос', ['A', 'B'])?.answers).toEqual(['B']);
+	});
+	it('очищает ответы и метки свежести при смене источника', () => {
+		const c = new AnswerCache();
+		c.set('T', 'Q', ['a', 'b'], ['b']);
+		c.clear();
+
+		expect(c.has('T', 'Q', ['a', 'b'])).toBe(false);
+		expect(c.get('T', 'Q', ['a', 'b'])).toBeNull();
+		expect(c.fresh('T', 'Q', ['a', 'b'])).toBe(false);
+	});
+	it('сохраняет уверенность ответа для последующего автоответа', () => {
+		const c = new AnswerCache();
+		c.set('T', 'Q', ['a', 'b'], ['b'], 0.2);
+
+		expect(c.get('T', 'Q', ['b', 'a'])!.confidence).toBe(0.2);
+	});
+	it('сохраняет происхождение и объяснение ответа', () => {
+		const c = new AnswerCache();
+		c.set('T', 'Q', ['a', 'b'], ['b'], 0.95);
+		c.annotate('T', 'Q', ['a', 'b'], {source: 'local', reason: 'Локальная база · 95%', supportCount: 1});
+
+		expect(c.get('T', 'Q', ['a', 'b'])).toMatchObject({source: 'local', reason: 'Локальная база · 95%', supportCount: 1});
+	});
 	it('сохраняет и достаёт запись по тройке (topic, question, variants)', () => {
 		const c = new AnswerCache();
 		c.set('T', 'Q', ['a', 'b', 'c'], ['b']);
@@ -84,6 +115,22 @@ describe('AnswerCache — нормализация ключа', () => {
 		// запрашиваем в другом порядке — ключ тот же после внутренней сортировки
 		expect(c.get('T', 'Q', ['c', 'a', 'b'])).not.toBeNull();
 		expect(c.get('T', 'Q', ['b', 'c', 'a'])).not.toBeNull();
+	});
+
+	it('пересчитывает индекс правильного ответа после перестановки вариантов', () => {
+		const c = new AnswerCache();
+		c.set('T', 'Q', ['a', 'b', 'c'], ['b']);
+
+		expect(c.get('T', 'Q', ['b', 'c', 'a'])!.idx).toEqual([0]);
+		expect(c.get('T', 'Q', ['c', 'a', 'b'])!.idx).toEqual([2]);
+		expect(c.get('T', 'Q', ['a', 'b', 'c'])!.idx).toEqual([1]);
+	});
+
+	it('пересчитывает все индексы множественного ответа', () => {
+		const c = new AnswerCache();
+		c.set('T', 'Q', ['a', 'b', 'c'], ['a', 'c']);
+
+		expect(c.get('T', 'Q', ['c', 'a', 'b'])!.idx).toEqual([0, 1]);
 	});
 
 	it('разные variants дают разные записи', () => {

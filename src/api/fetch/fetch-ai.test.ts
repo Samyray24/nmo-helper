@@ -47,13 +47,13 @@ describe('fn validateApiKey', () => {
 		expect(body.max_completion_tokens).toBe(5);
 	});
 
-	it('переданный endpoint используется вместо AI_URL', async () => {
+	it('кастомный endpoint получает исходное имя модели при проверке ключа', async () => {
 		sendMessage.mockImplementation((_msg, cb) => cb({ error: false, status: 200, text: '{}' }));
 		await validateApiKey('sk', 'claude-sonnet-5', 'https://custom.example/v1/chat');
 		const [msg] = sendMessage.mock.calls[0] as [Record<string, unknown>, unknown];
 		expect(msg.url).toBe('https://custom.example/v1/chat');
 		const body = JSON.parse(msg.body as string);
-		expect(body.model).toBe('anthropic/claude-sonnet-5');
+		expect(body.model).toBe('claude-sonnet-5');
 	});
 
 	it('429 → true (ключ валиден, просто лимит)', async () => {
@@ -242,8 +242,26 @@ describe('fn parseAnswer', () => {
 		expect(parseAnswer(make('1,3'))).toEqual([0, 2]);
 	});
 
-	it('цифры внутри текста вытягиваются', () => {
+	it('принимает явный список с коротким префиксом «Ответы»', () => {
 		expect(parseAnswer(make('Ответы: 1 и 3'))).toEqual([0, 2]);
+	});
+
+	it.each([
+		'Согласно рекомендации 1, правильный ответ 2',
+		'2, потому что дозировка 1 мг',
+		'1.5',
+		'-1',
+	])('не извлекает номера из неоднозначного текста: %s', content => {
+		expect(parseAnswer(make(content))).toEqual([]);
+	});
+
+	it('принимает список номеров в блоке кода', () => {
+		expect(parseAnswer(make('```text\n1, 3\n```'))).toEqual([0, 2]);
+	});
+
+	it('не падает на content другого типа', () => {
+		const response = {error: false, status: 200, text: JSON.stringify({choices: [{message: {content: [2]}}]})};
+		expect(parseAnswer(response)).toEqual([]);
 	});
 
 	it('нет цифр → пустой массив', () => {
@@ -317,10 +335,17 @@ describe('fn askAI', () => {
 			.rejects.toThrow('таймаут 30 с — попробуйте ещё раз');
 	});
 
-	it('не возвращает повторные и несуществующие варианты', async () => {
+	it('отклоняет ответ с несуществующими вариантами целиком', async () => {
 		const body = JSON.stringify({choices: [{message: {content: '1, 1, 9, 0'}}]});
 		sendMessage.mockImplementation((_msg, cb) => cb({error: false, status: 200, text: body}));
 
-		await expect(askAI('sk', 'Q?', ['a', 'b'], false, '', 'gpt-5.4-mini')).resolves.toEqual([0]);
+		await expect(askAI('sk', 'Q?', ['a', 'b'], false, '', 'gpt-5.4-mini')).resolves.toEqual([]);
+	});
+
+	it('не выбирает первый номер, когда одиночному вопросу предложено несколько ответов', async () => {
+		const text = JSON.stringify({choices: [{message: {content: '1, 2'}}]});
+		sendMessage.mockImplementation((_msg, cb) => cb({error: false, status: 200, text}));
+
+		await expect(askAI('sk', 'Q?', ['a', 'b'], true, '', 'gpt-5.4-mini')).resolves.toEqual([]);
 	});
 });

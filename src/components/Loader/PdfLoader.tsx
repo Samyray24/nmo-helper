@@ -5,6 +5,7 @@ import {usePdfScore, type IPdfScoreVariant} from '../../contexts/PdfScoreContext
 import {answerCache} from '../../utils/answer-cache';
 import {Status} from '../../types';
 import {StatusTitle} from '../../utils/constants';
+import {loadMedPdfRuntime} from '../../utils/pdf-runtime';
 
 export interface IPdfLoaderState {
 	readonly processing: boolean;
@@ -13,31 +14,6 @@ export interface IPdfLoaderState {
 interface IPdfLoaderProps {
 	readonly pdfData: ArrayBuffer | null;
 	readonly onChange: (state: IPdfLoaderState) => void;
-}
-
-interface IPdfJsRuntime {
-	readonly getDocument?: unknown;
-	readonly GlobalWorkerOptions?: {
-		workerSrc: string;
-	};
-}
-
-interface IMedPdfGlobal {
-	readonly pdfjsLib?: IPdfJsRuntime;
-}
-
-async function loadMedPdfNmo() {
-	const medPdfNmo = await import('med-pdf-nmo/browser');
-	const pdfjsLib = (globalThis as typeof globalThis & IMedPdfGlobal).pdfjsLib;
-
-	if (!pdfjsLib?.GlobalWorkerOptions) {
-		throw new Error('PDF.js browser runtime is not available.');
-	}
-
-	pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.mjs');
-	medPdfNmo.setPdfJsLib(pdfjsLib);
-
-	return medPdfNmo;
 }
 
 const PdfLoader = ({pdfData, onChange}: IPdfLoaderProps) => {
@@ -62,7 +38,7 @@ const PdfLoader = ({pdfData, onChange}: IPdfLoaderProps) => {
 			setStatus({title: 'анализирую PDF...', status: Status.LOADING});
 
 			try {
-				const {answerQuestion} = await loadMedPdfNmo();
+				const {answerQuestion} = await loadMedPdfRuntime();
 				if (cancelled) return;
 
 				const options = {question, variants, type: isSingle ? 'single' : 'multi', includeSources: true};
@@ -77,7 +53,7 @@ const PdfLoader = ({pdfData, onChange}: IPdfLoaderProps) => {
 					return;
 				}
 
-				answerCache.set(topic ?? '', question, variants, result.selected);
+				answerCache.set(topic ?? '', question, variants, result.selected, result.confidence);
 
 				const conf = Math.round(result.confidence * 100);
 

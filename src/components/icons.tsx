@@ -112,6 +112,13 @@ export const IconFile: React.FC<IIconProps> = ({size = 14, className}) => (
 	</svg>
 );
 
+export const IconDatabase: React.FC<IIconProps> = ({size = 14, className}) => (
+	<svg {...base(size)} className={className}>
+		<ellipse cx="12" cy="5" rx="8" ry="3"/>
+		<path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>
+	</svg>
+);
+
 export const IconMinimize: React.FC<IIconProps> = ({size = 14, className}) => (
 	<svg {...base(size)} className={className}>
 		<path d="M5 12h14"/>

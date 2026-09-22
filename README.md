@@ -1,19 +1,19 @@
-# NMO Helper v5.0.0
+# NMO Helper v5.3.0
 
 > Умный помощник в прохождении тестов НМО на портале [edu.rosminzdrav.ru](https://a.edu.rosminzdrav.ru) — бесплатное расширение для браузера с открытым исходным кодом.
 
 Авто-поиск по базам ответов, автоответ с настраиваемым интервалом, AI-режим (GPT, Gemini, Claude, DeepSeek), PDF-режим: поиск по клиническим рекомендациям — всё работает из коробки.
 
 [![Firefox Add-ons](https://img.shields.io/amo/v/nmo-helper?style=flat-square&label=Firefox%20Add-ons&color=ff9500&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/ru/firefox/addon/nmo-helper/)
-[![Downloads](https://img.shields.io/github/downloads/lKolabrodl/nmo-helper/total?style=flat-square&label=скачиваний&color=667eea&cacheSeconds=3600)](https://github.com/lKolabrodl/nmo-helper/releases)
-[![Stars](https://img.shields.io/github/stars/lKolabrodl/nmo-helper?style=flat-square&color=fbbf24&cacheSeconds=3600)](https://github.com/lKolabrodl/nmo-helper)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/lKolabrodl/nmo-helper/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/Samyray24/nmo-helper/total?style=flat-square&label=скачиваний&color=667eea&cacheSeconds=3600)](https://github.com/Samyray24/nmo-helper/releases)
+[![Stars](https://img.shields.io/github/stars/Samyray24/nmo-helper?style=flat-square&color=fbbf24&cacheSeconds=3600)](https://github.com/Samyray24/nmo-helper)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/Samyray24/nmo-helper/blob/main/LICENSE)
 [![VirusTotal](https://img.shields.io/badge/VirusTotal-Clean-brightgreen?style=flat-square&logo=virustotal)](https://www.virustotal.com/gui/file/dd746259d7a4eefdaadd88e33c2fec39eca2ee848b05cee036a6713b29459c7d?nocache=1)
 
 🌐 **Сайт:** [nmo-helper.ru](https://nmo-helper.ru)<br>
 📖 **Инструкция:** [nmo-helper.ru/instruction](https://nmo-helper.ru/instruction)<br>
 💬 **Обратная связь:** [nmo-helper.ru/feedback](https://nmo-helper.ru/feedback)<br>
-🐞 **Баги и предложения:** [GitHub Issues](https://github.com/lKolabrodl/nmo-helper/issues)
+🐞 **Баги и предложения:** [GitHub Issues](https://github.com/Samyray24/nmo-helper/issues)
 
 ---
 
@@ -29,6 +29,10 @@
 | **Автоподсветка** | Правильные ответы подсвечиваются при переходе между вопросами |
 | **Автоответ** | Может автоматически отмечать найденные ответы и переходить дальше с заданным интервалом |
 | **Кеширование** | Ответы кешируются — при навигации назад/вперёд повторных запросов нет |
+| **Локальная база** | Импорт JSON, CSV или ZIP для быстрого поиска без сети |
+| **Умный резерв** | При отсутствии ответа автоматически подключает дополнительные базы и выбранный AI |
+| **Восстановление** | Продолжает тест после обновления страницы без повторного клика |
+| **Диагностика** | Проверяет DOM НМО, браузер, хранилище и сетевые источники без раскрытия токенов |
 | **Умное сопоставление** | Нормализация тире, смешанных кириллица/латиница, нечёткий поиск |
 | **Плавающая панель** | Перетаскивание, сворачивание, сохранение позиции между сессиями |
 | **Обход CORS** | Работает без дополнительных плагинов |
@@ -36,20 +40,37 @@
 ## Требования
 
 - **Google Chrome** / Яндекс Браузер / Edge / Brave / Opera (любой Chromium-браузер)
-- **Mozilla Firefox 140+**
+- **Mozilla Firefox 140+** или отдельная сборка **Firefox ESR 102+** для Astra Linux
 
 ---
 
 ## Установка
 
+### Комплект браузеров: Windows и Linux
+
+`npm run package:all` создаёт общий ZIP: Chromium-браузеры, Firefox 140+ и отдельный
+Firefox 102+ на Manifest V2. XPI пока не подписаны Mozilla. Исходники для конвертации
+Safari также включены; готового приложения Safari нет. Подробности: [BROWSERS.md](BROWSERS.md).
+
+### Windows и Linux — единый пакет для Яндекс Браузера
+
+`npm run package:yandex` создаёт CRX3 для прямой установки в Яндекс Браузер и ZIP
+для установки из папки. Оба содержат текущие изменения. Инструкция: [INSTALL.md](INSTALL.md).
+
+### Linux — текущая изменённая сборка
+
+Инструкция для Chrome/Chromium и Firefox: [LINUX.md](LINUX.md).
+Команда `npm run package:linux` собирает архив `releases/nmo-helper-linux-5.3.0.tar.gz`
+с исправлениями и дополнительными базами. Для установки готового архива Node.js не нужен.
+
 ### Chrome / Yandex / Edge / Brave / Opera
 
-1. Скачайте [`nmo-helper-chrome-5.0.0.zip`](https://github.com/lKolabrodl/nmo-helper/releases/download/v5.0.0/nmo-helper-chrome-5.0.0.zip)
+1. Скачайте [`nmo-helper-chromium-5.3.0.zip`](https://github.com/Samyray24/nmo-helper/releases/download/v5.3.0/nmo-helper-chromium-5.3.0.zip)
 2. Разархивируйте в удобную папку
 3. Откройте `chrome://extensions/` в адресной строке
 4. Включите **«Режим разработчика»** (правый верхний угол)
 5. Нажмите **«Загрузить распакованное расширение»**
-6. Выберите папку `nmo-helper-chrome-5.0.0`
+6. Выберите папку `nmo-helper-chrome-5.3.0`
 
 <details>
 <summary>📹 Показать GIF-инструкцию</summary>
@@ -65,7 +86,7 @@
 
 **Способ 2 — прямая установка `.xpi`:**
 
-1. Скачайте [`firefox_nmo_helper.xpi`](https://github.com/lKolabrodl/nmo-helper/releases/download/v5.0.0/firefox_nmo_helper.xpi)
+1. Скачайте [`nmo-helper-firefox-5.3.0-unsigned.xpi`](https://github.com/Samyray24/nmo-helper/releases/download/v5.3.0/nmo-helper-firefox-5.3.0-unsigned.xpi)
 2. Перетащите `.xpi` в окно Firefox, или откройте `about:addons` → ⚙ → **«Установить дополнение из файла»**
 3. Подтвердите установку
 
@@ -93,15 +114,21 @@
 
 Панель сама определяет тему теста, ищет ответы и подсвечивает правильные варианты. Никаких действий не требуется.
 
-- Ищет сразу в нескольких базах и выбирает лучший результат
+- Сначала проверяет NMO Helper, РосМедИнфо, 24forcare и Testotvet
+- Если подходящего ответа нет, автоматически ищет в РешТестНМО, ОТВ НМО, test-nmo.ru, pro-nmo.ru и tests-nmo.ru
+- В резервных базах ищет по названию теста, затем по тексту текущего вопроса; выбирает лучшее совпадение с вариантами на странице
 - Если одна база недоступна — работает с остальными
+- Показывает источник, точность, совпавший вопрос и прямую ссылку на страницу с ответом
+- При конфликте надёжных баз останавливает автопрохождение и показывает ответы каждой базы
+- Слабые совпадения подсвечивает жёлтым и не применяет автоматически
+- Автоответ отмечает варианты, переходит к следующему вопросу и завершает тест после последнего вопроса; для новых установок он включён по умолчанию
 - Ответы кешируются при навигации
 
 ### Сайты
 
 1. Введите название теста в поиск
-2. Выберите результат из базы ответов или вставьте ссылку
-3. Нажмите **Запуск**
+2. Выберите результат из любой из девяти баз — ответы загрузятся автоматически
+3. При необходимости остановите выбранный источник кнопкой **Остановить**
 
 ### PDF
 
@@ -113,9 +140,12 @@
 
 ### AI
 
-Подключите нейросеть для решения тестов. Два варианта:
+Подключите нейросеть для решения тестов. Доступны три варианта:
 
-**ProxyAPI** (по умолчанию) — российский прокси с оплатой в рублях и без VPN:
+**Бесплатно** (по умолчанию) — работает без токена и настроек. Расширение сначала
+использует OVH, затем AI Horde как резерв. Скорость зависит от нагрузки бесплатных сервисов.
+
+**ProxyAPI** — российский прокси с оплатой в рублях и без VPN:
 1. Зарегистрируйтесь на [proxyapi.ru](https://proxyapi.ru) и пополните баланс
 2. Получите API-ключ на [console.proxyapi.ru/keys](https://console.proxyapi.ru/keys)
 3. Вставьте ключ и выберите модель
@@ -125,6 +155,18 @@
 - API Endpoint (OpenAI-совместимый, например `https://api.deepseek.com/v1/chat/completions`)
 - API Token
 - Название модели
+
+### Локальная база
+
+Во вкладке **База** можно загрузить собственный JSON, CSV или ZIP, объединить его
+с текущими ответами и экспортировать вопросы, которых нет ни в одном источнике.
+Данные остаются в браузере и доступны при нестабильной сети.
+
+### Диагностика
+
+Откройте настройки и нажмите **Проверить расширение**. Отчёт показывает состояние
+страницы НМО, браузера, локальной базы и последних сетевых запросов. API-ключи,
+cookies и полный текст вопроса в отчёт по умолчанию не попадают.
 
 ### Модели (ProxyAPI)
 
@@ -190,7 +232,7 @@ npm test            # Запустить тесты
 
 ## Предыдущие минорные версии
 
-Ниже только последние релизы минорных веток. Полная история доступна в [GitHub Releases](https://github.com/lKolabrodl/nmo-helper/releases).
+Ниже только последние релизы минорных веток. Новые сборки доступны в [GitHub Releases](https://github.com/Samyray24/nmo-helper/releases), исторические — в исходном репозитории.
 
 - [v4.3.0](https://github.com/lKolabrodl/nmo-helper/tree/v4.3.0) — обновлённая панель, расширенный поиск по базам и просмотр источника PDF
 - [v4.2.0](https://github.com/lKolabrodl/nmo-helper/tree/v4.2.0) — автоответ с настраиваемым интервалом

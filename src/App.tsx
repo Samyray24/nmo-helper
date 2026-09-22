@@ -7,6 +7,7 @@ import {QuestionFinderProvider} from './contexts/QuestionFinderContext';
 import {BugReportProvider} from './contexts/BugReportContext';
 import {PdfScoreProvider} from './contexts/PdfScoreContext';
 import {SettingsProvider} from './contexts/SettingsContext';
+import {AutoSolveStatusProvider} from './contexts/AutoSolveStatusContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Header from './components/Header';
 import TabBar from './components/TabBar';
@@ -21,6 +22,12 @@ import AnswerSharingLoader from './components/Loader/AnswerSharingLoader';
 import AnswerScoreHighlighter from './components/Loader/AnswerScoreHighlighter';
 import AutoSolveLoader from './components/Loader/AutoSolveLoader';
 import QuizActionsStatus from './components/QuizActionsStatus';
+import QuizSessionLoader from './components/Loader/QuizSessionLoader';
+import AutoAiFallbackLoader from './components/Loader/AutoAiFallbackLoader';
+import LocalAnswerLoader from './components/Loader/LocalAnswerLoader';
+import SectionBase from './components/SectionBase';
+import {DiagnosticsProvider} from './contexts/DiagnosticsContext';
+import DiagnosticsDialog from './components/DiagnosticsDialog';
 
 const FullPanel: React.FC<{initialState: IExtensionState}> = ({initialState}) => {
 	const {mode} = usePanelUi();
@@ -35,6 +42,7 @@ const FullPanel: React.FC<{initialState: IExtensionState}> = ({initialState}) =>
 					{mode === 'sites' && <SectionSites initialUrl={initialState.savedUrl}/>}
 					{mode === 'ai' && <SectionAi/>}
 					{mode === 'pdf' && <SectionPdf/>}
+					{mode === 'base' && <SectionBase/>}
 				</ErrorBoundary>
 			</div>
 		</>
@@ -58,23 +66,31 @@ const PanelShell: React.FC<{initialState: IExtensionState}> = ({initialState}) =
 const App: React.FC<{initialState: IExtensionState}> = ({initialState}) => (
 	<PanelUiProvider initialState={initialState}>
 		<SettingsProvider initialState={initialState}>
-			<BugReportProvider>
-				<PanelStatusProvider>
-					<QuestionFinderProvider>
-						<PdfScoreProvider>
-							<ErrorBoundary>
-								<AnswerHighlighter/>
-								<QuestionCacheCollector/>
-								<AnswerSharingLoader/>
-								<AnswerScoreHighlighter/>
-								<AutoSolveLoader/>
-								<QuizActionsStatus/>
-								<PanelShell initialState={initialState}/>
-							</ErrorBoundary>
-						</PdfScoreProvider>
-					</QuestionFinderProvider>
-				</PanelStatusProvider>
-			</BugReportProvider>
+			<DiagnosticsProvider>
+				<AutoSolveStatusProvider>
+					<BugReportProvider>
+						<PanelStatusProvider>
+							<QuestionFinderProvider>
+								<PdfScoreProvider>
+									<ErrorBoundary>
+										<AnswerHighlighter/>
+										<QuestionCacheCollector/>
+										<QuizSessionLoader/>
+										<AutoAiFallbackLoader/>
+										<LocalAnswerLoader/>
+										<DiagnosticsDialog/>
+										<AnswerSharingLoader/>
+										<AnswerScoreHighlighter/>
+										<AutoSolveLoader/>
+										<QuizActionsStatus/>
+										<PanelShell initialState={initialState}/>
+									</ErrorBoundary>
+								</PdfScoreProvider>
+							</QuestionFinderProvider>
+						</PanelStatusProvider>
+					</BugReportProvider>
+				</AutoSolveStatusProvider>
+			</DiagnosticsProvider>
 		</SettingsProvider>
 	</PanelUiProvider>
 );

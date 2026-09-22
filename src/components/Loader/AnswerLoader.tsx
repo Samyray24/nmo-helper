@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { detectSource } from '../../utils';
 import {getFirstAnswers, getNmoAnswers, getSecondAnswers, getThirdAnswers} from '../../api/fetch/search-answer-sources';
 import type {QaCaseModel} from '../../utils/cases';
+import {isAdditionalSource} from '../../utils/additional-sources';
+import {getAdditionalAnswers} from '../../api/fetch/additional-sources';
 
 export interface IAnswerModel {
 	readonly loading: boolean;
@@ -43,6 +45,7 @@ const AnswerLoader = ({url, onChange}: IAnswerLoaderProps) => {
 				if (sourceKey === 'nmo-helper') model = await getNmoAnswers(valid.href);
 				else if (sourceKey === 'third') model = await getThirdAnswers(valid.href);
 				else if (sourceKey === 'first') model = await getFirstAnswers(valid.href);
+				else if (isAdditionalSource(sourceKey)) model = await getAdditionalAnswers(valid.href);
 				else model = await getSecondAnswers(valid.href);
 
 				if (cancelled) return;

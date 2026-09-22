@@ -1,13 +1,17 @@
 import React from 'react';
-import cn from 'classnames';
 import {MIN_AUTO_SOLVE_DELAY_SECONDS, useSettings} from '../../contexts/SettingsContext';
-import {IconCheck} from '../icons';
 
 const AutoSolveSettings: React.FC = () => {
 
 	const {
-		enabled: autoSolveEnabled,
-		setEnabled: setAutoSolveEnabled,
+		mode,
+		setMode,
+		confidenceThreshold,
+		setConfidenceThreshold,
+		aiFallbackEnabled,
+		setAiFallbackEnabled,
+		recoveryEnabled,
+		setRecoveryEnabled,
 		delayMinSeconds: autoSolveDelayMinSeconds,
 		setDelayMinSeconds: setAutoSolveDelayMinSeconds,
 		delayMaxSeconds: autoSolveDelayMaxSeconds,
@@ -16,20 +20,16 @@ const AutoSolveSettings: React.FC = () => {
 
 	return (
 		<>
-			<label className={cn('nmo-settings-option', {on: autoSolveEnabled})}
-				role="menuitemcheckbox"
-				aria-checked={autoSolveEnabled}>
-				<input type="checkbox"
-					className="nmo-settings-option-input"
-					checked={autoSolveEnabled}
-					onChange={e => setAutoSolveEnabled(e.target.checked)}/>
-				<span className="nmo-settings-option-text">Решать автоматически</span>
-				<span className="nmo-settings-option-check" aria-hidden="true">
-					<IconCheck size={12}/>
-				</span>
+			<label className="nmo-settings-field">
+				<span>Режим автоматизации</span>
+				<select value={mode} onChange={event => setMode(event.target.value as typeof mode)}>
+					<option value="highlight">Осторожный — подсветка</option>
+					<option value="select">Обычный — выбрать ответ</option>
+					<option value="full">Полный — пройти тест</option>
+				</select>
 			</label>
 
-			<div className={cn('nmo-settings-section', {disabled: !autoSolveEnabled})} aria-disabled={!autoSolveEnabled}>
+			<div className="nmo-settings-section">
 				<div className="nmo-settings-section-title">Интервал прохождения вопроса</div>
 
 				<div className="nmo-settings-range">
@@ -39,7 +39,6 @@ const AutoSolveSettings: React.FC = () => {
 							min={MIN_AUTO_SOLVE_DELAY_SECONDS}
 							step={1}
 							value={autoSolveDelayMinSeconds}
-							disabled={!autoSolveEnabled}
 							onChange={e => setAutoSolveDelayMinSeconds(e.currentTarget.valueAsNumber)}/>
 					</label>
 
@@ -49,11 +48,22 @@ const AutoSolveSettings: React.FC = () => {
 							min={autoSolveDelayMinSeconds}
 							step={1}
 							value={autoSolveDelayMaxSeconds}
-							disabled={!autoSolveEnabled}
 							onChange={e => setAutoSolveDelayMaxSeconds(e.currentTarget.valueAsNumber)}/>
 					</label>
 				</div>
 			</div>
+			<details className="nmo-settings-advanced">
+				<summary>Дополнительные настройки</summary>
+				<label className="nmo-settings-field">
+					<span>Минимальная уверенность: {Math.round(confidenceThreshold * 100)}%</span>
+					<input type="range" min="50" max="100" step="1" value={Math.round(confidenceThreshold * 100)}
+						onChange={event => setConfidenceThreshold(Number(event.currentTarget.value) / 100)}/>
+				</label>
+				<label className="nmo-settings-check"><input type="checkbox" checked={aiFallbackEnabled}
+					onChange={event => setAiFallbackEnabled(event.currentTarget.checked)}/>AI-резерв, если базы не помогли</label>
+				<label className="nmo-settings-check"><input type="checkbox" checked={recoveryEnabled}
+					onChange={event => setRecoveryEnabled(event.currentTarget.checked)}/>Восстанавливать тест после обновления</label>
+			</details>
 		</>
 	);
 };

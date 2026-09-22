@@ -3,10 +3,13 @@
  * @module constants
  */
 
-import type { IAiModel } from '../types';
+import type { AdditionalSourceKey, IAiModel } from '../types';
 
 /** Цвет подсветки правильных ответов */
 export const HIGHLIGHT_COLOR = '#4ecca3';
+
+/** Цвет подсветки ответа, найденного с низкой уверенностью */
+export const LOW_CONFIDENCE_HIGHLIGHT_COLOR = '#f5c14b';
 
 /** Порог нечёткого совпадения (Dice coefficient) для поиска вопросов на сайтах-источниках */
 export const SIMILARITY_THRESHOLD = 0.85;
@@ -24,6 +27,14 @@ export const UPDATE_URL = 'https://nmo-helper.ru/update';
 export const FIRST_ANSWER_SOURCE_HOST = 'rosmedicinfo.ru';
 export const SECOND_ANSWER_SOURCE_HOST = '24forcare.com';
 export const THIRD_ANSWER_SOURCE_HOST = 'testotvet.com';
+/** Открытые HTML-базы, используемые после основных источников. */
+export const ADDITIONAL_SOURCES: readonly {key: AdditionalSourceKey; host: string; label: string; boldAnswers?: boolean}[] = [
+	{key: 'reshtestnmo', host: 'reshtestnmo.ru', label: 'РешТестНМО'},
+	{key: 'otvnmo', host: 'otvnmo.ru', label: 'ОТВ НМО'},
+	{key: 'test-nmo', host: 'test-nmo.ru', label: 'Тест НМО'},
+	{key: 'pro-nmo', host: 'pro-nmo.ru', label: 'Про НМО', boldAnswers: true},
+	{key: 'tests-nmo', host: 'tests-nmo.ru', label: 'Тесты НМО'},
+];
 //
 export const NMO_API_HOST = 'nmo-helper.ru';
 export const NMO_API_BASE_URL = `https://${NMO_API_HOST}/api/nmo`;

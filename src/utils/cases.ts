@@ -23,6 +23,8 @@ export interface IParse2Result {
 	readonly answers: string[];
 	/** 0..1 — уверенность матча: qScore × (доля входных вариантов, нашедших совпадение). */
 	readonly score: number;
+	/** Исходная формулировка вопроса из выбранной базы. */
+	readonly matchedQuestion: string;
 }
 
 /**
@@ -76,6 +78,7 @@ export function findAnswers(model: QaCaseModel[], question: string, variants: st
 	return {
 		answers,
 		score: winner.qScore * confidence,
+		matchedQuestion: winner.c.question,
 	};
 }
 

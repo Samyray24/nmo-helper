@@ -4,16 +4,27 @@
  * @remarks
  * `answers` копируется из аргумента {@link AnswerCache.set}, а `idx` вычисляется
  * относительно порядка вариантов, переданного в тот же вызов `set`.
- * Объект хранится в кеше и возвращается по ссылке, поэтому вызывающему коду
- * следует считать его и вложенные массивы неизменяемыми.
+ * При чтении индексы пересчитываются для текущего порядка вариантов.
  */
 export interface ICachedAnswerModel {
 	/** Нормализованный составной ключ темы, вопроса и набора вариантов. */
 	readonly id: string;
 	/** Тексты правильных ответов в том виде и порядке, в котором они были сохранены. */
 	readonly answers: string[];
-	/** 0-индексированные позиции правильных ответов в массиве `variants` из вызова `set`. */
+	/** 0-индексированные позиции правильных ответов в текущем массиве `variants`. */
 	readonly idx: number[];
+	/** Оценка совпадения, сохранённая источником; низкая оценка блокирует автоответ. */
+	readonly confidence: number;
+	/** Источник и объяснение, показанные пользователю. */
+	readonly source?: string;
+	readonly reason?: string;
+	readonly supportCount?: number;
+}
+
+export interface IAnswerCacheMetadata {
+	readonly source: string;
+	readonly reason: string;
+	readonly supportCount: number;
 }
 
 /**
@@ -25,8 +36,7 @@ export interface ICachedAnswerModel {
  * не влияют на поиск записи.
  *
  * @remarks
- * Кеш не сохраняется в `storage`, не ограничивает число записей и не удаляет их
- * автоматически. Повторный {@link AnswerCache.set} с тем же ключом полностью заменяет запись.
+ * Кеш не сохраняется в `storage`; смена источника очищает его через {@link AnswerCache.clear}.
  */
 export class AnswerCache {
 	/** Записи, индексированные нормализованным составным ключом. */
@@ -34,12 +44,24 @@ export class AnswerCache {
 	/** Ключи записей, чья одноразовая метка свежести ещё не была прочитана. */
 	private readonly _fresh = new Set<string>();
 
+	/** Удаляет ответы предыдущего режима, модели или документа и их метки свежести. */
+	public clear(): void {
+		this._cache.clear();
+		this._fresh.clear();
+	}
+
+	/** Удаляет ответ одного вопроса и связанную с ним метку свежести. */
+	public delete(topic: string, question: string, variants: string[]): boolean {
+		const id = makeId(topic, question, variants);
+		this._fresh.delete(id);
+		return this._cache.delete(id);
+	}
+
 	/**
 	 * Возвращает ранее сохранённый ответ для указанной темы, вопроса и набора вариантов.
 	 *
-	 * Порядок элементов `variants` не участвует в сравнении ключей. При этом `idx`
-	 * в найденной записи остаётся привязан к порядку вариантов из исходного вызова
-	 * {@link AnswerCache.set} и не пересчитывается относительно аргумента этого метода.
+	 * Порядок элементов `variants` не участвует в сравнении ключей. Индексы
+	 * пересчитываются относительно текущего порядка вариантов.
 	 *
 	 * @param topic Название темы теста.
 	 * @param question Текст вопроса.
@@ -47,12 +69,12 @@ export class AnswerCache {
 	 * @returns Сохранённую запись или `null`, если совпадающего ключа в кеше нет.
 	 *
 	 * @remarks
-	 * Метод возвращает хранящийся в кеше объект, а не его копию. Полученную запись
-	 * и её массивы нельзя изменять, если она должна оставаться согласованной с кешем.
+	 * Метод возвращает копию записи, чтобы её изменение не повреждало кеш.
 	 */
 	public get(topic: string, question: string, variants: string[]): ICachedAnswerModel | null {
 		const id = makeId(topic, question, variants);
-		return this._cache.get(id) ?? null;
+		const cached = this._cache.get(id);
+		return cached ? {...cached, answers: [...cached.answers], idx: computeIdx(variants, cached.answers)} : null;
 	}
 
 	/**
@@ -81,16 +103,26 @@ export class AnswerCache {
 	 * @param question Текст вопроса.
 	 * @param variants Полный набор вариантов ответа в текущем порядке на странице.
 	 * @param answers Тексты правильных ответов. Массив копируется перед сохранением.
-	 * @returns Созданную и сохранённую запись. Это тот же объект, который вернёт
-	 * {@link AnswerCache.get}.
+	 * @param confidence Оценка источника от 0 до 1; недопустимая оценка становится нулём.
+	 * @returns Созданную и сохранённую запись в исходном порядке вариантов.
 	 */
-	public set(topic: string, question: string, variants: string[], answers: string[]): ICachedAnswerModel {
+	public set(topic: string, question: string, variants: string[], answers: string[], confidence = 1): ICachedAnswerModel {
 		const id = makeId(topic, question, variants);
 		const idx = computeIdx(variants, answers);
-		const entry: ICachedAnswerModel = {id, answers: [...answers], idx: [...idx]};
+		const normalizedConfidence = Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : 0;
+		const entry: ICachedAnswerModel = {id, answers: [...answers], idx: [...idx], confidence: normalizedConfidence};
 		this._cache.set(id, entry);
 		this._fresh.add(id);
 		return entry;
+	}
+
+	/** Дополняет сохранённый ответ происхождением, не меняя его содержимое. */
+	public annotate(topic: string, question: string, variants: string[], metadata: IAnswerCacheMetadata): boolean {
+		const id = makeId(topic, question, variants);
+		const entry = this._cache.get(id);
+		if (!entry) return false;
+		this._cache.set(id, {...entry, ...metadata});
+		return true;
 	}
 
 	/**

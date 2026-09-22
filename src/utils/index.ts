@@ -29,6 +29,7 @@ export {
 	getVariantElements,
 	getVariantTexts,
 	isSingleAnswer,
+	isQuestionFinishButton,
 	queryAll,
 	queryFirst,
 } from '../api/dom';

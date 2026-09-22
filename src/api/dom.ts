@@ -292,9 +292,9 @@ function isQuestionForwardButton(button: HTMLButtonElement): boolean {
  * @param button Проверяемая кнопка.
  * @returns `true`, если кнопка завершает тест после последнего вопроса.
  */
-function isQuestionFinishButton(button: HTMLButtonElement): boolean {
+export function isQuestionFinishButton(button: HTMLButtonElement): boolean {
 	const text = button.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() ?? '';
-	return text.includes('завершить тестирование')
+	return /завершить\s+(тестирование|тест|попытку)/.test(text)
 		&& !!button.closest('.question-buttons');
 }
 
@@ -320,10 +320,10 @@ function isFinishQuizButton(button: HTMLButtonElement): boolean {
  */
 function isFinishQuizConfirmButton(button: HTMLButtonElement): boolean {
 	const text = button.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() ?? '';
-	if (text !== 'да') return false;
+	if (!/^(да|завершить|подтвердить)$/.test(text)) return false;
 
 	const dialog = button.closest<HTMLElement>('lib-quiz-finishing-confirm-dialog, .mat-mdc-dialog-surface');
 	const dialogText = dialog?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() ?? '';
 
-	return dialogText.includes('выйти из тестирования');
+	return /(выйти|завершить).*(тест|попыт)|(тест|попыт).*(завершить|закончить)/.test(dialogText);
 }

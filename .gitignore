@@ -8,3 +8,7 @@ AGENTS.md
 repomix-output.md
 .playwright-cli/
 output/
+releases/
+ГОТОВЫЕ ВЕРСИИ/
+*.pem
+*.crx

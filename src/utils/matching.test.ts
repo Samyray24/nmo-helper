@@ -32,6 +32,20 @@ describe('detectSource', () => {
 	it('пустая строка → null', () => {
 		expect(detectSource('')).toBeNull();
 	});
+
+	it.each([
+		`https://example.com/path/${FIRST_ANSWER_SOURCE_HOST}`,
+		`https://${FIRST_ANSWER_SOURCE_HOST}.example.com/test`,
+		`https://example.com/?site=${NMO_API_HOST}`,
+		`https://${THIRD_ANSWER_SOURCE_HOST}@example.com/test`,
+		`javascript:${SECOND_ANSWER_SOURCE_HOST}`,
+	])('не считает посторонний URL источником: %s', url => {
+		expect(detectSource(url)).toBeNull();
+	});
+
+	it('распознаёт www-поддомен и регистр имени сервера', () => {
+		expect(detectSource(`https://WWW.${FIRST_ANSWER_SOURCE_HOST.toUpperCase()}/test`)).toBe('first');
+	});
 });
 
 describe('similarity', () => {

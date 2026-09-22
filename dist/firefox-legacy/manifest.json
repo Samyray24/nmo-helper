@@ -1,0 +1,79 @@
+{
+  "manifest_version": 2,
+  "name": "NMO Helper — Firefox ESR",
+  "version": "5.3.0",
+  "description": "Автоподсветка правильных ответов на тестах НМО",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "https://edu.rosminzdrav.ru/*",
+    "https://*.edu.rosminzdrav.ru/*",
+    "https://nmo-helper.ru/*",
+    "https://*.nmo-helper.ru/*",
+    "https://rosmedicinfo.ru/*",
+    "https://*.rosmedicinfo.ru/*",
+    "https://24forcare.com/*",
+    "https://*.24forcare.com/*",
+    "https://testotvet.com/*",
+    "https://*.testotvet.com/*",
+    "https://reshtestnmo.ru/*",
+    "https://*.reshtestnmo.ru/*",
+    "https://otvnmo.ru/*",
+    "https://*.otvnmo.ru/*",
+    "https://test-nmo.ru/*",
+    "https://*.test-nmo.ru/*",
+    "https://pro-nmo.ru/*",
+    "https://*.pro-nmo.ru/*",
+    "https://tests-nmo.ru/*",
+    "https://*.tests-nmo.ru/*",
+    "https://openai.api.proxyapi.ru/*",
+    "https://llama-3-3-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/*",
+    "https://oai.aihorde.net/*"
+  ],
+  "optional_permissions": [
+    "https://*/*"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  },
+  "web_accessible_resources": [
+    "pdf.worker.min.mjs",
+    "icons/new_icon.png"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://edu.rosminzdrav.ru/*",
+        "https://*.edu.rosminzdrav.ru/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "nmo-helper-esr-local@extension",
+      "strict_min_version": "102.0"
+    }
+  }
+}

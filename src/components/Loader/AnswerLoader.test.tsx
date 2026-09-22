@@ -3,6 +3,9 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {NMO_API_TOPIC_ENDPOINT, THIRD_ANSWER_SOURCE_HOST} from '../../utils/constants';
 import AnswerLoader from './AnswerLoader';
 
+const additional = vi.hoisted(() => ({get: vi.fn()}));
+vi.mock('../../api/fetch/additional-sources', () => ({getAdditionalAnswers: additional.get}));
+
 const NMO_TEST_URL = `https://${THIRD_ANSWER_SOURCE_HOST}/test-medik/nmo/topic.html`;
 const NMO_API_RESULT_URL = `${NMO_API_TOPIC_ENDPOINT}/short-lived.uid`;
 
@@ -30,6 +33,16 @@ beforeEach(() => {
 });
 
 describe('AnswerLoader', () => {
+	it.each(['reshtestnmo', 'otvnmo', 'test-nmo', 'pro-nmo', 'tests-nmo'])('загружает выбранную новую базу %s', async source => {
+		const model = [{question: 'Вопрос', variants: ['A', 'B'], answers: ['B'], idx: 0}];
+		mocks.detectSource.mockReturnValue(source);
+		additional.get.mockResolvedValue(model);
+		const onChange = vi.fn();
+		render(<AnswerLoader url="https://otvnmo.ru/test" onChange={onChange}/>);
+		await waitFor(() => expect(onChange).toHaveBeenLastCalledWith({loading: false, error: null, data: model}));
+		expect(additional.get).toHaveBeenCalledWith('https://otvnmo.ru/test');
+		expect(mocks.getSecondAnswers).not.toHaveBeenCalled();
+	});
 	it('для sourceKey=third использует отдельный загрузчик и возвращает готовую модель', async () => {
 		const model = [{
 			question: 'Вопрос',

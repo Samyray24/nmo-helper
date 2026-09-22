@@ -5,6 +5,47 @@
   flex-shrink: 0;
 }
 
+.nmo-settings-field {
+  display: grid;
+  gap: 5px;
+  color: $text-3;
+  font-size: $fs-sm;
+
+  select,
+  input[type='range'] { width: 100%; }
+
+  select {
+    padding: 7px 8px;
+    border: 1px solid $border;
+    border-radius: $r-sm;
+    background: $bg-input;
+    color: $text;
+  }
+}
+
+.nmo-settings-advanced {
+  margin-top: 8px;
+  color: $text-3;
+  font-size: $fs-sm;
+
+  summary { cursor: pointer; color: $text-2; }
+
+  &[open] { display: grid; gap: 9px; }
+}
+
+.nmo-settings-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  line-height: 1.35;
+}
+
+.nmo-settings-diagnostics {
+  width: 100%; margin-top: 8px; padding: 7px 8px;
+  border: 1px solid $border; border-radius: $r-sm; background: $bg-input; color: $text-2;
+  font: inherit; cursor: pointer;
+}
+
 .nmo-settings-trigger.active {
   background: $bg-chip;
   color: $text;

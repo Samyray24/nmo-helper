@@ -7,7 +7,7 @@
   top: 16px;
   right: 16px;
   z-index: 99999;
-  width: $panel-width;
+  width: min(#{$panel-width}, calc(100vw - 16px));
   background: $bg-frame;
   border: 1px solid $border;
   border-radius: $r-xl;
@@ -46,6 +46,11 @@
 .nmo-body {
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 86px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: $border-strong transparent;
 }
 
 // FullPanel всегда монтирован (чтобы loaders продолжали работать),
@@ -59,7 +64,7 @@
   padding-bottom: 14px;
 
   // секции с собственным footer не нуждаются в нижнем отступе
-  &:has(.nmo-footer) { padding-bottom: 0; }
+  &.nmo-section-with-footer { padding-bottom: 0; }
 }
 
 .nmo-section-inner {

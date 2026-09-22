@@ -1,0 +1,30 @@
+@use '../../vars' as *;
+
+.nmo-diagnostics-backdrop {
+  position: absolute; inset: 0; z-index: 40; padding: 10px;
+  display: flex; align-items: flex-start; justify-content: center;
+  background: rgba(5, 8, 14, .72); backdrop-filter: blur(2px);
+}
+
+.nmo-diagnostics {
+  width: 100%; max-height: 430px; overflow: auto; padding: 12px;
+  border: 1px solid $border-strong; border-radius: $r-lg; background: $bg-frame; box-shadow: $shadow-pop;
+
+  header { display: flex; justify-content: space-between; align-items: flex-start; }
+  header strong { display: block; color: $text; font-size: $fs-base; }
+  header span { display: block; margin-top: 2px; color: $text-3; font-size: $fs-xs; }
+  details { margin-top: 10px; color: $text-3; font-size: $fs-sm; }
+  summary { cursor: pointer; color: $text-2; }
+}
+
+.nmo-diagnostics-grid { display: grid; gap: 5px; margin-top: 11px; }
+.nmo-diagnostics-row { display: grid; grid-template-columns: 7px 1fr auto; gap: 7px; align-items: center; font-size: $fs-sm; }
+.nmo-diagnostics-row > span { width: 6px; height: 6px; border-radius: 50%; background: $warning; }
+.nmo-diagnostics-row > span.ok { background: $success; }
+.nmo-diagnostics-row strong { color: $text-2; font-weight: 500; }
+.nmo-diagnostics-row em { color: $text-3; font-style: normal; }
+.nmo-diagnostics-events { max-height: 130px; margin-top: 6px; overflow: auto; }
+.nmo-diagnostics-events div { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-top: 1px solid $border-soft; }
+.nmo-diagnostics-events code { color: $text-3; }
+.nmo-diagnostics-check { display: flex; gap: 7px; margin-top: 10px; color: $text-3; font-size: $fs-xs; line-height: 1.35; }
+.nmo-diagnostics-download { width: 100%; margin-top: 10px; padding: 8px; border: 1px solid $border; border-radius: $r-sm; background: $bg-chip; color: $text; cursor: pointer; }

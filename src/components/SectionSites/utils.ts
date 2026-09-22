@@ -15,9 +15,14 @@ const DISPLAY_ID_LENGTH = 10;
 
 export const SOURCE_DETAILS: Record<ISourceKey, { label: string; className: string;	priority: number;}> = {
 	'nmo-helper': {label: 'nmo-helper', className: 'primary', priority: 0},
-	'first': {label: 'база 1', className: 'secondary', priority: 1},
-	'second': {label: 'база 2', className: 'secondary', priority: 2},
-	'third': {label: 'база 3', className: 'secondary', priority: 3},
+	'first': {label: 'РосМедИнфо', className: 'secondary', priority: 1},
+	'second': {label: '24forcare', className: 'secondary', priority: 2},
+	'third': {label: 'Testotvet', className: 'secondary', priority: 3},
+	'reshtestnmo': {label: 'РешТестНМО', className: 'secondary', priority: 4},
+	'otvnmo': {label: 'ОТВ НМО', className: 'secondary', priority: 5},
+	'test-nmo': {label: 'Тест НМО', className: 'secondary', priority: 6},
+	'pro-nmo': {label: 'Про НМО', className: 'secondary', priority: 7},
+	'tests-nmo': {label: 'Тесты НМО', className: 'secondary', priority: 8},
 };
 
 /**

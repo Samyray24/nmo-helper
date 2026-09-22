@@ -2,6 +2,7 @@ import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {NMO_API_TOPIC_ENDPOINT} from '../../utils/constants';
 import SectionSites from './index';
+import {answerCache} from '../../utils/answer-cache';
 
 interface ITestSearchResult {
 	readonly source: 'first' | 'second' | 'third' | 'nmo-helper';
@@ -61,13 +62,6 @@ vi.mock('../../utils', () => ({
 	storageSet: testState.storageSet,
 }));
 
-vi.mock('../../utils/answer-cache', () => ({
-	answerCache: {
-		has: vi.fn(() => false),
-		set: vi.fn(),
-	},
-}));
-
 vi.mock('../../utils/matching', () => ({
 	detectSource: vi.fn(),
 	stripAnswerTitlePrefix: (title: string) => title,
@@ -103,6 +97,7 @@ describe('SectionSites', () => {
 		testState.variantChange = null;
 		testState.answerChange = null;
 		testState.answerRequest = null;
+		answerCache.clear();
 	});
 
 	it('показывает только поиск без вкладок и ручного ввода URL', () => {
@@ -173,5 +168,27 @@ describe('SectionSites', () => {
 			});
 		});
 		expect(testState.storageSet).not.toHaveBeenCalled();
+	});
+
+	it('удаляет ответы предыдущего сайта при выборе нового результата', () => {
+		render(<SectionSites initialUrl=""/>);
+		answerCache.set('Тема', 'Вопрос', ['A', 'B'], ['A']);
+		act(() => testState.variantChange?.({loading: false, error: null, data: [{
+			source: 'first', title: 'Другой сайт', url: 'https://rosmedicinfo.ru/other',
+		}]}));
+		fireEvent.click(screen.getByRole('button', {name: /Другой сайт/}));
+		expect(answerCache.get('Тема', 'Вопрос', ['A', 'B'])).toBeNull();
+	});
+
+	it('удаляет ответы при остановке выбранного сайта', () => {
+		render(<SectionSites initialUrl=""/>);
+		act(() => testState.variantChange?.({loading: false, error: null, data: [{
+			source: 'first', title: 'Сайт', url: 'https://rosmedicinfo.ru/test',
+		}]}));
+		fireEvent.click(screen.getByRole('button', {name: /Сайт/}));
+		act(() => testState.answerChange?.({loading: false, error: null, data: []}));
+		answerCache.set('Тема', 'Вопрос', ['A', 'B'], ['A']);
+		fireEvent.click(screen.getByRole('button', {name: 'Остановить'}));
+		expect(answerCache.get('Тема', 'Вопрос', ['A', 'B'])).toBeNull();
 	});
 });

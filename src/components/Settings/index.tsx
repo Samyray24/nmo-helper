@@ -4,6 +4,7 @@ import './styles.scss';
 import {useSettings} from '../../contexts/SettingsContext';
 import {IconCheck, IconSettings} from '../icons';
 import AutoSolveSettings from './AutoSolveSettings';
+import {useDiagnosticsDialog} from '../../contexts/DiagnosticsContext';
 
 interface ISettingsProps {
 	readonly onOpen?: () => void;
@@ -12,6 +13,7 @@ interface ISettingsProps {
 const Settings: React.FC<ISettingsProps> = ({onOpen}) => {
 	const settingsRef = useRef<HTMLDivElement>(null);
 	const [open, setOpen] = useState(false);
+	const {setOpen: setDiagnosticsOpen} = useDiagnosticsDialog();
 	const {enabled: testDataSharingEnabled, setEnabled: setTestDataSharingEnabled} =
 		useSettings().testDataSharing;
 
@@ -57,6 +59,7 @@ const Settings: React.FC<ISettingsProps> = ({onOpen}) => {
 			{open && (
 				<div className="nmo-settings-menu nmo-fade-up" role="menu">
 					<AutoSolveSettings/>
+					<button type="button" className="nmo-settings-diagnostics" onClick={() => { setOpen(false); setDiagnosticsOpen(true); }}>Проверить расширение</button>
 					<div className="nmo-settings-divider"/>
 					<label className={cn('nmo-settings-option', {on: testDataSharingEnabled})}
 						role="menuitemcheckbox"

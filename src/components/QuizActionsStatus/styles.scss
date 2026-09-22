@@ -22,7 +22,7 @@
   font-size: 11px;
   font-weight: 500;
   line-height: 1.25;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .nmo-quiz-actions-status-item {
@@ -39,6 +39,10 @@
 .nmo-quiz-actions-status-value {
   color: #e7eaf3;
   font-weight: 700;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nmo-quiz-actions-status-dot {
@@ -49,9 +53,20 @@
   flex-shrink: 0;
 }
 
-.nmo-quiz-actions-status-item.on .nmo-quiz-actions-status-dot {
+.nmo-quiz-actions-status-item.phase-idle .nmo-quiz-actions-status-dot,
+.nmo-quiz-actions-status-item.phase-waiting .nmo-quiz-actions-status-dot,
+.nmo-quiz-actions-status-item.phase-selecting .nmo-quiz-actions-status-dot,
+.nmo-quiz-actions-status-item.phase-moving .nmo-quiz-actions-status-dot,
+.nmo-quiz-actions-status-item.phase-finishing .nmo-quiz-actions-status-dot,
+.nmo-quiz-actions-status-item.phase-complete .nmo-quiz-actions-status-dot {
   background: #4ade9b;
   box-shadow: 0 0 0 3px rgba(74, 222, 155, 0.14);
+}
+
+.nmo-quiz-actions-status-item.phase-paused .nmo-quiz-actions-status-dot,
+.nmo-quiz-actions-status-item.phase-error .nmo-quiz-actions-status-dot {
+  background: #f5c14b;
+  box-shadow: 0 0 0 3px rgba(245, 193, 75, 0.14);
 }
 
 @media (max-width: 760px) {

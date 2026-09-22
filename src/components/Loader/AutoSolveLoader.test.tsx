@@ -5,6 +5,8 @@ import AutoSolveLoader from './AutoSolveLoader';
 
 const mocks = vi.hoisted(() => ({
 	autoSolveEnabled: true,
+	autoSolveMode: undefined as 'highlight' | 'select' | 'full' | undefined,
+	confidenceThreshold: 0.8,
 	delayMinSeconds: 0,
 	delayMaxSeconds: 0,
 	status: 'ok',
@@ -13,12 +15,15 @@ const mocks = vi.hoisted(() => ({
 	variants: ['Вариант A', 'Вариант B', 'Вариант C'],
 	isSingle: true,
 	getCachedAnswer: vi.fn(),
+	setAutoStatus: vi.fn(),
 }));
 
 vi.mock('../../contexts/SettingsContext', () => ({
 	useSettings: () => ({
 		autoSolve: {
 			enabled: mocks.autoSolveEnabled,
+			mode: mocks.autoSolveMode,
+			confidenceThreshold: mocks.confidenceThreshold,
 			delayMinSeconds: mocks.delayMinSeconds,
 			delayMaxSeconds: mocks.delayMaxSeconds,
 		},
@@ -32,6 +37,10 @@ vi.mock('../../contexts/PanelStatusContext', () => ({
 			status: mocks.status,
 		},
 	}),
+}));
+
+vi.mock('../../contexts/AutoSolveStatusContext', () => ({
+	useAutoSolveStatus: () => ({setStatus: mocks.setAutoStatus}),
 }));
 
 vi.mock('../../contexts/QuestionFinderContext', () => ({
@@ -52,6 +61,8 @@ beforeEach(() => {
 	vi.setSystemTime(new Date('2026-08-22T10:00:00Z'));
 
 	mocks.autoSolveEnabled = true;
+	mocks.autoSolveMode = undefined;
+	mocks.confidenceThreshold = 0.8;
 	mocks.delayMinSeconds = 0;
 	mocks.delayMaxSeconds = 0;
 	mocks.status = Status.OK;
@@ -64,6 +75,7 @@ beforeEach(() => {
 		answers: ['Вариант B'],
 		idx: [1],
 	});
+	mocks.setAutoStatus.mockReset();
 
 	document.body.innerHTML = createQuizMarkup('radio');
 });
@@ -76,6 +88,28 @@ afterEach(() => {
 });
 
 describe('AutoSolveLoader', () => {
+	it('в осторожном режиме ничего не нажимает', async () => {
+		mocks.autoSolveMode = 'highlight';
+		const nextClick = vi.fn();
+		getNextButton().addEventListener('click', nextClick);
+		render(<AutoSolveLoader/>);
+		await advanceTime(1000);
+		expect(getAnswerInputs().every(input => !input.checked)).toBe(true);
+		expect(nextClick).not.toHaveBeenCalled();
+		expect(mocks.setAutoStatus).toHaveBeenCalledWith(expect.objectContaining({phase: 'disabled'}));
+	});
+
+	it('в обычном режиме выбирает ответ, но не переходит дальше', async () => {
+		mocks.autoSolveMode = 'select';
+		const nextClick = vi.fn();
+		getNextButton().addEventListener('click', nextClick);
+		render(<AutoSolveLoader/>);
+		await advanceTime(1000);
+		expect(getAnswerInputs()[1]).toBeChecked();
+		expect(nextClick).not.toHaveBeenCalled();
+		expect(mocks.setAutoStatus).toHaveBeenCalledWith(expect.objectContaining({message: 'Ответ выбран — переходите дальше'}));
+	});
+
 	it('выбирает сохранённый radio-ответ, переходит дальше и не отвечает повторно', async () => {
 		const inputs = getAnswerInputs();
 		const answerClick = vi.fn();
@@ -111,7 +145,7 @@ describe('AutoSolveLoader', () => {
 		getNextButton().addEventListener('click', nextClick);
 
 		render(<AutoSolveLoader/>);
-		await advanceTime(2399);
+		await advanceTime(2249);
 
 		expect(inputs[1]).not.toBeChecked();
 		expect(nextClick).not.toHaveBeenCalled();
@@ -119,11 +153,23 @@ describe('AutoSolveLoader', () => {
 		await advanceTime(1);
 
 		expect(inputs[1]).toBeChecked();
-		expect(nextClick).not.toHaveBeenCalled();
-
-		await advanceTime(300);
-
 		expect(nextClick).toHaveBeenCalledOnce();
+	});
+
+	it('показывает обратный отсчёт до автоматического выбора', async () => {
+		mocks.delayMinSeconds = 2;
+		mocks.delayMaxSeconds = 2;
+		render(<AutoSolveLoader/>);
+
+		await advanceTime(250);
+		expect(mocks.setAutoStatus).toHaveBeenLastCalledWith({
+			phase: 'waiting', message: 'Выбираю ответ через', secondsRemaining: 2,
+		});
+
+		await advanceTime(1000);
+		expect(mocks.setAutoStatus).toHaveBeenLastCalledWith({
+			phase: 'waiting', message: 'Выбираю ответ через', secondsRemaining: 1,
+		});
 	});
 
 	it('синхронизирует checkbox-варианты с сохранённым множественным ответом', async () => {
@@ -168,15 +214,10 @@ describe('AutoSolveLoader', () => {
 		await advanceTime(301);
 
 		expect(inputs[1]).toBeChecked();
-		expect(nextClick).not.toHaveBeenCalled();
-
-		await advanceTime(300);
-
 		expect(nextClick).toHaveBeenCalledOnce();
 	});
 
 	it('подтверждает завершение теста после появления диалога', async () => {
-		mocks.status = Status.WARN;
 		document.body.innerHTML = createQuizMarkup('radio', [], true);
 		const finishClick = vi.fn();
 		const confirmClick = vi.fn();
@@ -184,7 +225,10 @@ describe('AutoSolveLoader', () => {
 			finishClick();
 			window.setTimeout(() => {
 				document.body.insertAdjacentHTML('beforeend', createFinishDialogMarkup());
-				document.querySelector('#finish-confirm')?.addEventListener('click', confirmClick);
+				document.querySelector('#finish-confirm')?.addEventListener('click', () => {
+					confirmClick();
+					document.body.innerHTML = createCompletedQuizMarkup();
+				});
 			}, 100);
 		});
 
@@ -193,11 +237,26 @@ describe('AutoSolveLoader', () => {
 
 		expect(finishClick).toHaveBeenCalledOnce();
 		expect(confirmClick).toHaveBeenCalledOnce();
+		expect(mocks.setAutoStatus).toHaveBeenCalledWith({
+			phase: 'complete', message: 'Тест завершён', secondsRemaining: null,
+		});
+	});
+
+	it.each(['Завершить тест', 'Завершить попытку'])('распознаёт финальную кнопку «%s»', async label => {
+		document.body.innerHTML = createQuizMarkup('radio').replace('Следующий вопрос', label);
+		const finishClick = vi.fn();
+		getNextButton().addEventListener('click', finishClick);
+
+		render(<AutoSolveLoader/>);
+		await advanceTime(1000);
+
+		expect(finishClick).toHaveBeenCalledOnce();
 	});
 
 	it.each([
 		['настройка выключена', false, Status.OK, true],
 		['статус панели не разрешает автоответ', true, Status.LOADING, true],
+		['ответ найден с предупреждением', true, Status.WARN, true],
 		['ответ отсутствует в кеше', true, Status.OK, false],
 	] as const)('ничего не нажимает, если %s', async (_name, enabled, status, hasCachedAnswer) => {
 		mocks.autoSolveEnabled = enabled;
@@ -211,6 +270,19 @@ describe('AutoSolveLoader', () => {
 		await advanceTime(5000);
 
 		expect(inputs.every(input => !input.checked)).toBe(true);
+		expect(nextClick).not.toHaveBeenCalled();
+	});
+
+	it('не выбирает неуверенный кешированный ответ даже при статусе OK', async () => {
+		mocks.getCachedAnswer.mockReturnValue({
+			id: 'uncertain-answer', answers: ['Вариант B'], idx: [1], confidence: 0.2,
+		});
+		const nextClick = vi.fn();
+		getNextButton().addEventListener('click', nextClick);
+		render(<AutoSolveLoader/>);
+		await advanceTime(5000);
+
+		expect(getAnswerInputs().every(input => !input.checked)).toBe(true);
 		expect(nextClick).not.toHaveBeenCalled();
 	});
 
@@ -241,6 +313,22 @@ describe('AutoSolveLoader', () => {
 
 		expect(getAnswerInputs()[1]).toBeChecked();
 		expect(nextClick).not.toHaveBeenCalled();
+	});
+
+	it('переходит дальше, когда кнопка становится доступна', async () => {
+		const nextButton = getNextButton();
+		nextButton.setAttribute('aria-disabled', 'true');
+		const nextClick = vi.fn();
+		nextButton.addEventListener('click', nextClick);
+		render(<AutoSolveLoader/>);
+
+		await advanceTime(900);
+		expect(getAnswerInputs()[1]).toBeChecked();
+		expect(nextClick).not.toHaveBeenCalled();
+
+		nextButton.removeAttribute('aria-disabled');
+		await advanceTime(100);
+		expect(nextClick).toHaveBeenCalledOnce();
 	});
 
 	it('использует контейнер варианта, если у radio-ответа нет input', async () => {
@@ -329,5 +417,16 @@ function createFinishDialogMarkup(): string {
 				<button id="finish-confirm">Да</button>
 			</div>
 		</div>
+	`;
+}
+
+function createCompletedQuizMarkup(): string {
+	return `
+		<lib-quiz-page>
+			<div class="text_value text-success">Завершен</div>
+			<lib-questions-list>
+				<div class="questionList"><div class="questionList-item"></div></div>
+			</lib-questions-list>
+		</lib-quiz-page>
 	`;
 }
