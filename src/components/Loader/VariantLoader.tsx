@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import type {ISearchResult} from '../../types';
 import {searchFirstSource, searchNmoSource, searchSecondarySource, searchThirdSource} from '../../api/fetch/search-variant-sources';
 import {searchAdditionalSource} from '../../api/fetch/additional-sources';
@@ -19,11 +19,13 @@ interface IVariantLoaderProps {
 }
 
 const VariantLoader = ({text, onChange, includeAdditional = true}: IVariantLoaderProps) => {
+	const onChangeRef = useRef(onChange);
+	onChangeRef.current = onChange;
 	useEffect(() => {
 		const query = (text ?? '').trim();
-		if (!query) return onChange({...INIT_STATE});
+		if (!query) return onChangeRef.current({...INIT_STATE});
 
-		onChange({loading: true, error: null, data: []});
+		onChangeRef.current({loading: true, error: null, data: []});
 
 		let cancelled = false;
 
@@ -39,10 +41,10 @@ const VariantLoader = ({text, onChange, includeAdditional = true}: IVariantLoade
 			if (cancelled) return;
 
 			const results = resultGroups.flat();
-			if (!results.length) return onChange({loading: false, error: 'ничего не найдено', data: []});
+			if (!results.length) return onChangeRef.current({loading: false, error: 'ничего не найдено', data: []});
 
 
-			onChange({loading: false, error: null, data: results});
+			onChangeRef.current({loading: false, error: null, data: results});
 		}
 
 		search();

@@ -5,7 +5,7 @@
 
 ## Яндекс Браузер — установка файла расширения
 
-1. Скопируйте `nmo-helper-yandex-windows-linux-5.3.0.crx` на нужный компьютер.
+1. Скопируйте `nmo-helper-yandex-windows-linux-5.4.0.crx` на нужный компьютер.
 2. Откройте в Яндекс Браузере `browser://tune`.
 3. Перетащите файл `.crx` в окно этой страницы и подтвердите установку.
 4. Откройте или обновите страницу теста НМО: https://a.edu.rosminzdrav.ru.
@@ -18,7 +18,7 @@
 
 ## Установка из ZIP — Яндекс / Chrome / Chromium
 
-1. Распакуйте `nmo-helper-yandex-windows-linux-5.3.0.zip` в постоянную папку.
+1. Распакуйте `nmo-helper-yandex-windows-linux-5.4.0.zip` в постоянную папку.
 2. Откройте `browser://extensions` в Яндексе или `chrome://extensions` в Chrome/Chromium.
 3. Включите «Режим разработчика».
 4. Нажмите «Загрузить распакованное расширение» и выберите папку с `manifest.json`.

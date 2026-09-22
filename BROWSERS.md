@@ -7,8 +7,8 @@
 |---|---|---|
 | Яндекс Браузер, Windows и Linux | `.crx` либо `chromium` | CRX3 упакован и проверен; установка в Яндексе ещё не проверена |
 | Chrome, Chromium, Edge, Brave, Opera, Vivaldi | `chromium` | Общая сборка Manifest V3; нужна проверка запуска в каждом браузере |
-| Firefox 140+ | `firefox` / `nmo-helper-firefox-5.3.0-unsigned.xpi` | Неподписанный пакет для проверки |
-| Firefox 102+, включая ESR 102/115/128 | `firefox-esr` / `nmo-helper-firefox-esr-5.3.0-unsigned.xpi` | Сборка Manifest V2 с целевой версией JS Firefox 102; запуск на Астре ещё не проверен |
+| Firefox 140+ | `firefox` / `nmo-helper-firefox-5.4.0-unsigned.xpi` | Неподписанный пакет для проверки |
+| Firefox 102+, включая ESR 102/115/128 | `firefox-esr` / `nmo-helper-firefox-esr-5.4.0-unsigned.xpi` | Сборка Manifest V2 с целевой версией JS Firefox 102; запуск на Астре ещё не проверен |
 | Safari на macOS | `safari-source` | Только исходники расширения для конвертации в Xcode; готового установщика нет |
 
 Firefox ниже 102, Internet Explorer и мобильные браузеры этим комплектом не охвачены.
@@ -39,7 +39,7 @@ Firefox ниже 102, Internet Explorer и мобильные браузеры �
 4. Нажмите «Загрузить распакованное расширение» и выберите папку `chromium`, где находится `manifest.json`.
 5. Откройте или обновите https://a.edu.rosminzdrav.ru.
 
-Можно вместо общего комплекта распаковать `nmo-helper-chromium-5.3.0.zip` и выбрать
+Можно вместо общего комплекта распаковать `nmo-helper-chromium-5.4.0.zip` и выбрать
 папку его содержимого. Сохраняйте установленную папку; после её обновления нажмите
 перезагрузку расширения. Если другая копия NMO Helper уже установлена, отключите её.
 

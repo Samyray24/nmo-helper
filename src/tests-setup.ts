@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 
 // Мок chrome.storage.local
 const store: Record<string, unknown> = {};
+const sessionStore: Record<string, unknown> = {};
 
 globalThis.chrome = {
 	storage: {
@@ -14,6 +15,22 @@ globalThis.chrome = {
 			},
 			set: (data: Record<string, unknown>, cb?: () => void) => {
 				Object.assign(store, data);
+				cb?.();
+			},
+			remove: (key: string | string[], cb?: () => void) => {
+				(Array.isArray(key) ? key : [key]).forEach(item => delete store[item]);
+				cb?.();
+			},
+		},
+		session: {
+			get: (key: string | string[], cb: (result: Record<string, unknown>) => void) => {
+				const keys = Array.isArray(key) ? key : [key];
+				const result: Record<string, unknown> = {};
+				keys.forEach(k => { if (k in sessionStore) result[k] = sessionStore[k]; });
+				cb(result);
+			},
+			set: (data: Record<string, unknown>, cb?: () => void) => {
+				Object.assign(sessionStore, data);
 				cb?.();
 			},
 		},

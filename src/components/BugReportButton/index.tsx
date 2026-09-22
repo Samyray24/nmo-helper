@@ -68,11 +68,12 @@ const BugReportButton: React.FC<IBugReportButtonProps> = ({isOpen: openProp, onC
 	useEffect(() => {
 		if (status !== 'SENT') return;
 		const id = setTimeout(() => {
-			_onCloseForm();
+			if (controlled) onClose?.();
+			else setOpenLocal(false);
 			setStatus(null);
 		}, 1500);
 		return () => clearTimeout(id);
-	}, [status]);
+	}, [status, controlled, onClose]);
 
 	const canSubmit = status === null;
 

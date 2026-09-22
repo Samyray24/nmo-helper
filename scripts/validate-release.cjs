@@ -61,7 +61,7 @@ else for (const line of fs.readFileSync(sumsFile, 'utf8').trim().split(/\r?\n/))
 for (const base of [releases, ready]) {
   if (!fs.existsSync(base)) continue;
   walk(base, file => {
-    const match = path.basename(file).match(/(\d+\.\d+\.\d+)/);
+    const match = path.basename(file).match(/([0-9]+[.][0-9]+[.][0-9]+)/);
     if (match && match[1] !== version && /NMO Helper|nmo-helper|SHA256SUMS/.test(path.basename(file))) fail(`old artifact: ${file}`);
   });
 }

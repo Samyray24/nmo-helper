@@ -6,6 +6,7 @@
 
 import {NMO_API_HOST} from '../../utils/constants';
 import {diagnostics} from '../../utils/diagnostics';
+import {sourceHealth} from '../../utils/source-health';
 
 /** Точные пути NMO API, для которых разрешено создавать подпись. */
 const PROTECTED_NMO_API_PATHS = new Set(['/api/nmo/topics', '/api/nmo/topic']);
@@ -86,17 +87,23 @@ export function fetchViaBackground(url: string, options: IRequestOptions = {}): 
 				const runtimeError = getRuntimeErrorMessage();
 				if (runtimeError) {
 					const failure = requestFailure(runtimeError);
-					diagnostics.recordNetwork(url, 0, Date.now() - startedAt, true);
+					const duration = Date.now() - startedAt;
+					diagnostics.recordNetwork(url, 0, duration, true);
+					sourceHealth.record(url, 0, duration, true);
 					resolve(failure);
 					return;
 				}
 
 				const result = response ?? requestFailure('Background did not return a response.');
-				diagnostics.recordNetwork(url, result.status, Date.now() - startedAt, result.error);
+				const duration = Date.now() - startedAt;
+				diagnostics.recordNetwork(url, result.status, duration, result.error);
+				sourceHealth.record(url, result.status, duration, result.error);
 				resolve(result);
 			});
 		} catch (error) {
-			diagnostics.recordNetwork(url, 0, Date.now() - startedAt, true);
+			const duration = Date.now() - startedAt;
+			diagnostics.recordNetwork(url, 0, duration, true);
+			sourceHealth.record(url, 0, duration, true);
 			resolve(requestFailure(getErrorMessage(error)));
 		}
 	});

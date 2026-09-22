@@ -16,6 +16,7 @@ export default function DiagnosticsDialog() {
 				<button type="button" className="nmo-icon-btn" aria-label="Закрыть" onClick={() => setOpen(false)}><IconClose size={13}/></button></header>
 			<div className="nmo-diagnostics-grid">
 				<StatusRow label="Браузер" value={`${report.browser.family} ${report.browser.browserVersion}`.trim()} ok={report.browser.family !== 'unknown'}/>
+				<StatusRow label="Разметка НМО" value={profileLabel(report.dom.profile)} ok={report.dom.profile !== 'unknown'}/>
 				<StatusRow label="Тема и вопрос" value={report.dom.topic && report.dom.question ? 'найдены' : 'не найдены'} ok={report.dom.topic && report.dom.question}/>
 				<StatusRow label="Варианты" value={String(report.dom.variants)} ok={report.dom.variants > 0}/>
 				<StatusRow label="Кнопка перехода" value={report.dom.nextButton ? 'найдена' : 'не найдена'} ok={report.dom.nextButton}/>
@@ -37,4 +38,10 @@ function downloadReport(report: unknown): void {
 	const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'}));
 	const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'nmo-helper-diagnostics.json'; anchor.click();
 	window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function profileLabel(profile: 'current-material' | 'compatible' | 'unknown'): string {
+	if (profile === 'current-material') return 'основная';
+	if (profile === 'compatible') return 'резервная';
+	return 'не распознана';
 }

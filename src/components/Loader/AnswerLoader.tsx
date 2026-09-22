@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import {useEffect, useRef} from 'react';
 import { detectSource } from '../../utils';
 import {getFirstAnswers, getNmoAnswers, getSecondAnswers, getThirdAnswers} from '../../api/fetch/search-answer-sources';
 import type {QaCaseModel} from '../../utils/cases';
@@ -19,23 +19,25 @@ interface IAnswerLoaderProps {
 }
 
 const AnswerLoader = ({url, onChange}: IAnswerLoaderProps) => {
+	const onChangeRef = useRef(onChange);
+	onChangeRef.current = onChange;
 
 	useEffect(() => {
 		const trimmed = url.trim();
-		if (!trimmed) return onChange({...INIT_STATE});
+		if (!trimmed) return onChangeRef.current({...INIT_STATE});
 
 		let valid: URL;
 		try {
 			valid = new URL(trimmed);
 		} catch {
-			onChange({ loading: false, error: 'некорректный URL', data: null });
+			onChangeRef.current({ loading: false, error: 'некорректный URL', data: null });
 			return;
 		}
 
 		const sourceKey = detectSource(valid.href);
-		if (!sourceKey) return onChange({loading: false, error: 'URL не относится к поддерживаемой базе ответов', data: null});
+		if (!sourceKey) return onChangeRef.current({loading: false, error: 'URL не относится к поддерживаемой базе ответов', data: null});
 
-		onChange({ loading: true, error: null, data: null });
+		onChangeRef.current({ loading: true, error: null, data: null });
 
 		let cancelled = false;
 
@@ -50,12 +52,12 @@ const AnswerLoader = ({url, onChange}: IAnswerLoaderProps) => {
 
 				if (cancelled) return;
 
-				onChange({loading: false, error: null, data: model});
+				onChangeRef.current({loading: false, error: null, data: model});
 
 			} catch (error) {
 				if (cancelled) return;
 				const message = (error as Error).message;
-				onChange({loading: false, error: message, data: null});
+				onChangeRef.current({loading: false, error: message, data: null});
 			}
 		}
 

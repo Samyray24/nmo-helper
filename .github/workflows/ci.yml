@@ -15,10 +15,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Получить код
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Настроить Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -37,6 +37,9 @@ jobs:
 
       - name: Собрать браузерные варианты
         run: npm run build
+
+      - name: Проверить панель в Chromium
+        run: npm run test:e2e
 
       - name: Сохранить тестовые сборки
         uses: actions/upload-artifact@v4

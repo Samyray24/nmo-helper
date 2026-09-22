@@ -5,6 +5,8 @@ import {useSettings} from '../../contexts/SettingsContext';
 import {cleanTopic, findCompletedQuizResults, getTopicElement, normalizeText, queryAll, queryFirst} from '../../utils';
 import {questionCache} from '../../utils/question-cache';
 import ModalAnswerSharing from '../ModalAnswerSharing';
+import {localAnswerDb} from '../../utils/local-answer-db';
+import {diagnostics} from '../../utils/diagnostics';
 
 const RESULTS_SETTLE_DELAY_MS = 200;
 
@@ -40,6 +42,7 @@ const AnswerSharingLoader = () => {
 
 			const snapshot = createAnswerSharingSnapshot(results);
 			if (!snapshot) return;
+			void learnSnapshotLocally(snapshot);
 
 			if (enabled) {
 				handledResultsRef.current.add(results);
@@ -130,6 +133,17 @@ function sendSnapshot(snapshot: IAnswerSharingSnapshot): void {
 	void submitSharedQuestions(snapshot.title, snapshot.questions).catch(error => {
 		console.warn('Не удалось поделиться ответами теста:', error);
 	});
+}
+
+/** Saves only answers that the NMO results page confirmed as correct. */
+export async function learnSnapshotLocally(snapshot: IAnswerSharingSnapshot): Promise<void> {
+	await localAnswerDb.merge(snapshot.questions.map(question => ({
+		topic: snapshot.title,
+		question: question.text,
+		variants: [...question.options],
+		answers: question.correct_indexes.map(index => question.options[index]).filter((value): value is string => typeof value === 'string'),
+	})));
+	diagnostics.record({kind: 'storage', code: `learned-confirmed:${snapshot.questions.length}`});
 }
 
 function findCorrectIndexes(variants: readonly string[], answers: readonly string[]): number[] | null {

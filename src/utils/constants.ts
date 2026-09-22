@@ -49,11 +49,11 @@ export const SELECTORS = {
 	/** Заголовок темы теста */
 	topic: ['.mat-card-title-quiz-custom', '.mat-mdc-card-title', '.v-label.v-label-h2'],
 	/** Контейнер текущего вопроса */
-	questionAnchor: ['#questionAnchor'],
+	questionAnchor: ['#questionAnchor', '[data-testid="question-anchor"]', 'lib-quiz-question'],
 	/** Текст вопроса (внутри questionAnchor) */
-	questionText: ['.question-title-text'],
+	questionText: ['.question-title-text', '[data-testid="question-text"]', '.question__title'],
 	/** Варианты ответов (внутри questionAnchor) */
-	variant: ['.mdc-form-field span'],
+	variant: ['.mdc-form-field span', '[data-testid="answer-option"]', '.question-answer label span'],
 	/** Нативный input внутри варианта ответа */
 	answerInput: ['input[type="radio"], input[type="checkbox"]'],
 	/** Интерактивная область варианта ответа */

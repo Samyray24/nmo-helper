@@ -5,6 +5,7 @@ import {ADDITIONAL_SOURCES, LOW_CONFIDENCE_THRESHOLD} from '../../utils/constant
 import {extractAdditionalCases, isAdditionalSource, parseAdditionalSearchResults} from '../../utils/additional-sources';
 import {detectSource, stripAnswerTitlePrefix, variantScore} from '../../utils/matching';
 import {fetchViaBackground, getResponseText, mapWithConcurrency} from './fetch';
+import {sourceHealth} from '../../utils/source-health';
 
 export interface IAdditionalAnswer {
 	readonly source: AdditionalSourceKey;
@@ -54,7 +55,10 @@ export async function findAdditionalAnswer(topic: string | null, question: strin
 	let best: IAdditionalAnswer | null = null;
 	for (const query of queries) {
 		if (cancelled()) return null;
-		const groups = await Promise.all(ADDITIONAL_SOURCES.map(async source => {
+		const sources = ADDITIONAL_SOURCES
+			.filter(source => sourceHealth.isAvailable(source.host))
+			.sort((a, b) => sourceHealth.score(b.host) - sourceHealth.score(a.host));
+		const groups = await Promise.all(sources.map(async source => {
 			try {
 				const results = await searchAdditionalSource(query, source.key);
 				return results.sort((a, b) => variantScore(stripAnswerTitlePrefix(b.title), query) - variantScore(stripAnswerTitlePrefix(a.title), query)).slice(0, 3);
