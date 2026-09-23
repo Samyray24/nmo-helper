@@ -1,4 +1,5 @@
 /** Popup: кнопки экспорта кеша ответов (блок временно отключён, см. popup.html) */
+/* global document, chrome */
 
 const versionLabel = document.querySelector('.popup-version');
 if (versionLabel) versionLabel.textContent = `v${chrome.runtime.getManifest().version}`;
