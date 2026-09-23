@@ -39,10 +39,10 @@ describe('CollapsedPill', () => {
 	});
 
 	it.each([
-		{status: Status.LOADING, fallback: 'AI думает…', marker: '.nmo-spinner'},
-		{status: Status.WARN, fallback: 'NMO Helper', marker: 'svg'},
-		{status: Status.ERR, fallback: 'NMO Helper', marker: 'svg'},
-		{status: Status.OK, fallback: 'NMO Helper', marker: 'svg'},
+		{status: Status.LOADING, fallback: 'Ищу ответ…', marker: '.nmo-spinner'},
+		{status: Status.WARN, fallback: 'Нужна проверка', marker: 'svg'},
+		{status: Status.ERR, fallback: 'Ошибка — откройте панель', marker: 'svg'},
+		{status: Status.OK, fallback: 'Ответ найден', marker: 'svg'},
 	] as const)('отображает маркер состояния $status', ({status, fallback, marker}) => {
 		context.status = {title: '', status};
 		const {container} = render(<CollapsedPill/>);
@@ -57,7 +57,9 @@ describe('CollapsedPill', () => {
 		context.status = {title: 'найдено в памяти', status: Status.OK};
 		render(<CollapsedPill/>);
 
-		expect(screen.getByText('найдено в памяти')).toBeInTheDocument();
+		expect(screen.getByTitle('найдено в памяти')).toBeInTheDocument();
 		expect(screen.queryByText('NMO Helper')).not.toBeInTheDocument();
 	});
 });
+
+vi.mock('../../contexts/SettingsContext', () => ({useSettings: () => ({autoSolve: {enabled: true, setEnabled: vi.fn()}})}));

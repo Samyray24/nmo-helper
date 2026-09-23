@@ -1,4 +1,5 @@
 import React from 'react';
+import StopAutoSolve from '../StopAutoSolve';
 import cn from 'classnames';
 import './styles.scss';
 import {usePanelUi} from '../../contexts/PanelUiContext';
@@ -29,10 +30,10 @@ const CollapsedPill: React.FC = () => {
 				</div>
 
 				<div className="nmo-pill-body">
-					<div className="nmo-pill-title">{title}</div>
+					<div className="nmo-pill-title" title={title}>{isLoading ? 'Ищу ответ…' : isError ? 'Ошибка — откройте панель' : isWarning ? 'Нужна проверка' : isOk ? 'Ответ найден' : title}</div>
 				</div>
 
-				<button type="button"
+				<StopAutoSolve/><button type="button"
 					className="nmo-icon-btn"
 					title="Развернуть"
 					onClick={() => setCollapsed(false)}>

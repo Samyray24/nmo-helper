@@ -2,6 +2,7 @@ const FAILURE_LIMIT = 3;
 const CIRCUIT_MS = 2 * 60 * 1000;
 
 interface ISourceHealthState {
+	lastResult: string;
 	attempts: number;
 	successes: number;
 	consecutiveFailures: number;
@@ -10,6 +11,7 @@ interface ISourceHealthState {
 }
 
 export interface ISourceHealthSnapshot {
+	readonly lastResult: string;
 	readonly host: string;
 	readonly attempts: number;
 	readonly successRate: number;
@@ -22,13 +24,14 @@ export interface ISourceHealthSnapshot {
 class SourceHealthRegistry {
 	private readonly states = new Map<string, ISourceHealthState>();
 
-	public record(url: string, status: number, durationMs: number, failed: boolean, now = Date.now()): void {
+	public record(url: string, status: number, durationMs: number, failed: boolean, now = Date.now(), message = ''): void {
 		let host: string;
 		try { host = new URL(url).hostname.toLowerCase(); } catch { return; }
-		const state = this.states.get(host) ?? {attempts: 0, successes: 0, consecutiveFailures: 0, totalDurationMs: 0, openUntil: 0};
+		const state = this.states.get(host) ?? {lastResult: '', attempts: 0, successes: 0, consecutiveFailures: 0, totalDurationMs: 0, openUntil: 0};
 		state.attempts += 1;
 		state.totalDurationMs += Math.max(0, durationMs);
 		const success = !failed && status >= 200 && status < 400;
+		state.lastResult = success ? 'Сайт доступен' : status === 429 ? 'Ограничение запросов' : /таймаут|timeout/i.test(message) ? 'Время ожидания истекло' : status === 0 ? 'Ошибка сети' : `Ошибка HTTP ${status}`;
 		if (success) {
 			state.successes += 1;
 			state.consecutiveFailures = 0;
@@ -57,6 +60,7 @@ class SourceHealthRegistry {
 	public snapshot(now = Date.now()): ISourceHealthSnapshot[] {
 		return [...this.states.entries()].map(([host, state]) => ({
 			host,
+			lastResult: state.lastResult,
 			attempts: state.attempts,
 			successRate: state.successes / Math.max(1, state.attempts),
 			averageDurationMs: Math.round(state.totalDurationMs / Math.max(1, state.attempts)),
@@ -67,6 +71,13 @@ class SourceHealthRegistry {
 	}
 
 	public clear(): void { this.states.clear(); }
+
+	public recordSearchResult(url: string, count: number): void {
+		try {
+			const state = this.states.get(new URL(url).hostname.toLowerCase());
+			if (state) state.lastResult = count ? `Найдено результатов: ${count}` : 'Поиск выполнен: результатов нет';
+		} catch { /* invalid URL */ }
+	}
 }
 
 export const sourceHealth = new SourceHealthRegistry();

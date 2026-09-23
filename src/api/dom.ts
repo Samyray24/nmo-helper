@@ -141,7 +141,7 @@ export function getVariantElements(): HTMLElement[] {
  * @returns Массив текстов вариантов в порядке отображения.
  */
 export function getVariantTexts(): string[] {
-	return getVariantElements().map(el => el.innerText.trim());
+	return getVariantElements().map(el => (el.innerText ?? el.textContent ?? '').trim());
 }
 
 /**

@@ -28,6 +28,7 @@ import LocalAnswerLoader from './components/Loader/LocalAnswerLoader';
 import SectionBase from './components/SectionBase';
 import {DiagnosticsProvider} from './contexts/DiagnosticsContext';
 import DiagnosticsDialog from './components/DiagnosticsDialog';
+import AnswerProvenance from './components/AnswerProvenance';
 
 const FullPanel: React.FC<{initialState: IExtensionState}> = ({initialState}) => {
 	const {mode} = usePanelUi();
@@ -37,6 +38,7 @@ const FullPanel: React.FC<{initialState: IExtensionState}> = ({initialState}) =>
 			<Header/>
 			<div className="nmo-body">
 				<TabBar/>
+				<AnswerProvenance/>
 				<ErrorBoundary>
 					{mode === 'auto' && <SectionAuto/>}
 					{mode === 'sites' && <SectionSites initialUrl={initialState.savedUrl}/>}

@@ -1,15 +1,10 @@
-/**
- * Проверка наличия новой версии расширения.
- *
- * Сервер: GET https://nmo-helper.ru/api/version → {ok, latest, url}.
- * Защита от спама — клиентский кэш в chrome.storage.local + throttle.
- */
+/** Проверка стабильных выпусков в репозитории Samyray24/nmo-helper. */
 
 import {fetchViaBackground} from './fetch/fetch';
 import {storageGet, storageSet} from './storage';
 
-const VERSION_ENDPOINT = 'https://nmo-helper.ru/api/version';
-const CACHE_KEY = 'versionCheck';
+const VERSION_ENDPOINT = 'https://api.github.com/repos/Samyray24/nmo-helper/releases/latest';
+const CACHE_KEY = 'githubVersionCheck';
 
 /** Максимальный возраст кэша для автоматических проверок (6 часов) */
 const TTL_AUTO_MS = 6 * 60 * 60 * 1000;
@@ -21,6 +16,7 @@ const EXT_VERSION = (typeof chrome !== 'undefined' && chrome.runtime?.getManifes
 export interface IVersionInfo {
 	readonly current: string;
 	readonly latest: string;
+	readonly unavailable?: boolean;
 }
 
 interface ICacheEntry {
@@ -32,8 +28,7 @@ interface ICacheEntry {
  * Возвращает данные о версии расширения. По умолчанию использует кэш с
  * TTL 6 часов. При `force=true` (ручной клик) — TTL 30 секунд (анти-спам).
  *
- * Сетевые ошибки и 429 от сервера никогда не бросаются: возвращаем cached,
- * либо «у вас актуальная версия», чтобы UI не визуализировал ошибку.
+ * При сбое возвращается признак unavailable, чтобы не утверждать актуальность версии.
  */
 export async function checkVersion(force = false): Promise<IVersionInfo> {
 	const cache = await storageGet<ICacheEntry | null>(CACHE_KEY, null);
@@ -42,18 +37,18 @@ export async function checkVersion(force = false): Promise<IVersionInfo> {
 
 	if (fresh) return {current: EXT_VERSION, latest: cache.latest};
 
-	const res = await fetchViaBackground(VERSION_ENDPOINT, {method: 'GET'});
+	const res = await fetchViaBackground(VERSION_ENDPOINT, {method: 'GET', timeoutMs: 15000});
 
-	// сеть упала или сервер ругается — возвращаем кэш, либо «всё хорошо»
+	// При сбое кэш не считается подтверждением актуальности.
 	if (res.error || res.status === 429 || res.status < 200 || res.status >= 300) {
-		if (cache) return {current: EXT_VERSION, latest: cache.latest};
-		return {current: EXT_VERSION, latest: EXT_VERSION};
+		return {current: EXT_VERSION, latest: cache?.latest ?? '', unavailable: true};
 	}
 
-	let body: {ok?: boolean; latest?: string} = {};
+	let body: {tag_name?: string; draft?: boolean; prerelease?: boolean} = {};
 	try { body = JSON.parse(res.text); } catch { /* noop */ }
 
-	const latest = (body.latest || '').trim() || EXT_VERSION;
+	const latest = typeof body.tag_name === 'string' ? body.tag_name.replace(/^v/, '').trim() : '';
+	if (!/^\d+\.\d+\.\d+$/.test(latest) || body.draft || body.prerelease) return {current: EXT_VERSION, latest: '', unavailable: true};
 	const entry: ICacheEntry = {checkedAt: Date.now(), latest};
 	storageSet(CACHE_KEY, entry);
 
@@ -63,6 +58,16 @@ export async function checkVersion(force = false): Promise<IVersionInfo> {
 export function isOutdated(info: IVersionInfo): boolean {
 	if (!info.current || !info.latest) return false;
 	return cmp(info.current, info.latest) < 0;
+}
+
+/** Ссылка только на известные имена пакетов в нашем репозитории. */
+export function releaseDownloadUrl(version: string): string {
+	if (!/^\d+\.\d+\.\d+$/.test(version)) return 'https://github.com/Samyray24/nmo-helper/releases/latest';
+	const manifest = chrome.runtime.getManifest?.();
+	const firefox = !!manifest?.browser_specific_settings;
+	const name = firefox ? `firefox${manifest?.manifest_version === 2 ? '-esr' : ''}-${version}-unsigned.xpi`
+		: /YaBrowser\//.test(navigator.userAgent) ? `yandex-windows-linux-${version}.zip` : `chromium-${version}.zip`;
+	return `https://github.com/Samyray24/nmo-helper/releases/download/v${version}/nmo-helper-${name}`;
 }
 
 function cmp(a: string, b: string): number {

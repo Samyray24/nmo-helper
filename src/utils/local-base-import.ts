@@ -30,11 +30,17 @@ export function parseCsvBase(text: string): ILocalAnswerRecord[] {
 }
 
 export async function parseLocalBaseFile(file: File): Promise<ILocalAnswerRecord[]> {
+	if (file.size > 20 * 1024 * 1024) throw new Error('Файл больше 20 МБ');
 	const name = file.name.toLowerCase();
 	if (name.endsWith('.json')) return parseJsonBase(await file.text());
 	if (name.endsWith('.csv')) return parseCsvBase(await file.text());
 	if (!name.endsWith('.zip')) throw new Error('поддерживаются только JSON, CSV и ZIP');
-	const entries = unzipSync(new Uint8Array(await file.arrayBuffer()));
+	let uncompressedSize = 0;
+	const entries = unzipSync(new Uint8Array(await file.arrayBuffer()), {filter: entry => {
+		uncompressedSize += entry.originalSize;
+		if (uncompressedSize > 20 * 1024 * 1024) throw new Error('Распакованный ZIP больше 20 МБ');
+		return true;
+	}});
 	const supported = Object.entries(entries).filter(([entry]) => /\.(json|csv)$/i.test(entry) && !entry.includes('__MACOSX'));
 	if (supported.length !== 1) throw new Error('ZIP должен содержать ровно один JSON или CSV');
 	const [entryName, bytes] = supported[0];
@@ -59,7 +65,13 @@ function validateRecord(value: unknown, line: number): ILocalAnswerRecord {
 	const answers = stringArray(value.answers);
 	if (!question || variants.length < 2 || !answers.length) throw new Error(`запись ${line}: неполные данные`);
 	if (answers.some(answer => !variants.some(variant => normalize(variant) === normalize(answer)))) throw new Error(`запись ${line}: ответ отсутствует среди вариантов`);
-	return {topic, question, variants, answers};
+	const metadata: Partial<ILocalAnswerRecord> = {
+		...(typeof value.source === 'string' ? {source: value.source.slice(0, 200)} : {}),
+		...(typeof value.updatedAt === 'number' && Number.isFinite(value.updatedAt) ? {updatedAt: value.updatedAt} : {}),
+	};
+	const conflicts = Array.isArray(value.conflicts) ? value.conflicts.map(stringArray) : [];
+	if (conflicts.some(group => !group.length || group.some(answer => !variants.includes(answer)))) throw new Error(`запись ${line}: неверные конфликтующие ответы`);
+	return {topic, question, variants, answers, ...metadata, ...(conflicts.length ? {conflicts} : {})};
 }
 
 function parseCsvRows(text: string): string[][] {

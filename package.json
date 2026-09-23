@@ -1,6 +1,6 @@
 {
   "name": "nmo-helper",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "description": "Расширение для браузера, которое поможет вам решить тесты (ИОМ'ы) на портале НМО — https://a.edu.rosminzdrav.ru\r </br>\r Прост в установке, работает из коробки.\r </br>\r Ответы берутся из баз поиска ответов, а также с помощью AI.\r </br>",
   "main": "ai.js",
   "scripts": {
@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "test:watch": "vitest",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "package:mozilla": "node scripts/package-mozilla.cjs"
   },
   "repository": {
     "type": "git",

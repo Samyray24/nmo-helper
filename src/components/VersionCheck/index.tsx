@@ -6,7 +6,7 @@ import {checkVersion, isOutdated, type IVersionInfo} from '../../api/version-che
 
 const EXT_VERSION = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest?.()?.version) || '0.0.0';
 
-type State = 'idle' | 'checking' | 'uptodate' | 'outdated';
+type State = 'idle' | 'checking' | 'uptodate' | 'outdated' | 'unavailable';
 
 interface IProps {
 	readonly onOutdated?: (info: IVersionInfo) => void;
@@ -36,6 +36,7 @@ const VersionCheck: React.FC<IProps> = ({onOutdated}) => {
 		setState('checking');
 		try {
 			const info = await checkVersion(true);
+			if (info.unavailable) { setState('unavailable'); return; }
 			if (isOutdated(info)) {
 				setState('outdated');
 				onOutdated?.(info);
@@ -44,11 +45,11 @@ const VersionCheck: React.FC<IProps> = ({onOutdated}) => {
 				setTimeout(() => setState('idle'), 2500);
 			}
 		} catch {
-			setState('idle');
+			setState('unavailable');
 		}
 	};
 
-	const tooltip = state === 'idle'
+	const tooltip = state === 'unavailable' ? 'GitHub недоступен. Нажмите, чтобы повторить' : state === 'idle'
 		? 'Проверить обновления'
 		: state === 'checking'
 			? 'Проверяю на сервере…'
@@ -61,6 +62,8 @@ const VersionCheck: React.FC<IProps> = ({onOutdated}) => {
 			onMouseEnter={() => setHover(true)}
 			onMouseLeave={() => setHover(false)}>
 			<button type="button"
+				title={tooltip}
+				aria-label={tooltip}
 				className={cn('nmo-chip', 'nmo-version-chip', state)}
 				disabled={state === 'checking'}
 				onClick={handleClick}>

@@ -16,8 +16,13 @@ export default function AutoAiFallbackLoader() {
 	const {topic, question, variants, isSingle} = useQuestionFinder();
 	const settings = useSettings();
 	const attemptedRef = useRef(new Set<string>());
+	const generationRef = useRef(0);
 	const enabled = settings.autoSolve.aiFallbackEnabled ?? true;
 	const threshold = settings.autoSolve.confidenceThreshold ?? 0.8;
+	useEffect(() => {
+		generationRef.current += 1;
+		return () => { generationRef.current += 1; };
+	}, [enabled, settings.ai, question, variants, isSingle, topic]);
 
 	useEffect(() => {
 		if (!enabled || !question || !variants.length) return;
@@ -28,13 +33,13 @@ export default function AutoAiFallbackLoader() {
 		if (attemptedRef.current.has(fingerprint)) return;
 		if (!hasProviderConfiguration(settings.ai)) return;
 
-		let cancelled = false;
+		const generation = generationRef.current;
 		const timer = window.setTimeout(() => {
 			attemptedRef.current.add(fingerprint);
 			setStatus({title: 'базы не помогли — спрашиваю AI...', status: Status.LOADING});
 			void solveWithProvider(settings.ai, question, variants, isSingle, topic ?? '')
 				.then(({indexes, source}) => {
-					if (cancelled) return;
+					if (generation !== generationRef.current) return;
 					if (!indexes.length) {
 						setStatus({title: 'AI не определил ответ', status: Status.WARN});
 						return;
@@ -43,17 +48,17 @@ export default function AutoAiFallbackLoader() {
 					answerCache.set(topic ?? '', question, variants, answers, 0.84);
 					answerCache.annotate(topic ?? '', question, variants, {
 						source: `AI · ${source}`,
-						reason: `Резервный AI · ${source} · 84%`,
+						reason: `Резервный AI · ${source} · ответ модели, не подтверждён базой`,
 						supportCount: 1,
 					});
 					setStatus({title: `резервный AI · ${source}`, status: Status.OK});
 				})
 				.catch(error => {
-					if (!cancelled) setStatus({title: `AI-резерв: ${error instanceof Error ? error.message : 'ошибка'}`, status: Status.WARN});
+					if (generation === generationRef.current) setStatus({title: `AI-резерв: ${error instanceof Error ? error.message : 'ошибка'}`, status: Status.WARN});
 				});
 		}, FALLBACK_DELAY_MS);
 
-		return () => { cancelled = true; window.clearTimeout(timer); };
+		return () => { window.clearTimeout(timer); };
 	}, [enabled, threshold, status.status, settings.ai, question, variants, isSingle, topic, setStatus]);
 
 	return null;

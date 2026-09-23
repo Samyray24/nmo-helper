@@ -12,12 +12,14 @@ import {
 	getNextQuestionButton,
 	getQuestionText,
 	getVariantElements,
+	getVariantTexts,
 	isQuestionFinishButton,
 } from '../../utils';
 import {claimQuizFinishReload, clearStaleQuizFinishBlockers} from '../../api/quiz-finish-recovery';
 import {answerCache} from '../../utils/answer-cache';
 import {LOW_CONFIDENCE_THRESHOLD} from '../../utils/constants';
 import {quizSessionStore} from '../../utils/quiz-session-store';
+import {localAnswerDb} from '../../utils/local-answer-db';
 
 const MOUSE_IDLE_DELAY_MS = 1500;
 const AUTO_SOLVE_CHECK_INTERVAL_MS = 250;
@@ -53,6 +55,8 @@ const AutoSolveLoader = () => {
 	const mouseIdleTimerRef = useRef<number | null>(null);
 	const mouseActiveRef = useRef(false);
 	const runningRef = useRef(false);
+	const stopRef = useRef(autoSolveSettings.setEnabled);
+	stopRef.current = autoSolveSettings.setEnabled;
 
 	useEffect(() => {
 		const markMouseActive = (): void => {
@@ -141,7 +145,7 @@ const AutoSolveLoader = () => {
 			runningRef.current = true;
 			publish('selecting', 'Выбираю правильный ответ');
 
-			void runAutoSolve(planned.idx, topic ?? '', question, variants, mode, recoveryEnabled, publish)
+			void runAutoSolve(planned.idx, topic ?? '', question, variants, mode, recoveryEnabled, publish, () => disposed)
 				.then(result => {
 					if (result === 'finished') publish('complete', 'Тест завершён');
 					else if (result === 'reloading') publish('finishing', 'Обновляю страницу НМО');
@@ -149,7 +153,8 @@ const AutoSolveLoader = () => {
 					else publish('idle', 'Следующий вопрос открыт');
 				})
 				.catch(error => {
-					completedAnswerIdRef.current = '';
+					if (disposed) return;
+					stopRef.current(false);
 					publish('error', error instanceof Error ? error.message : 'Не удалось продолжить');
 				})
 				.finally(() => runningRef.current = false);
@@ -177,16 +182,34 @@ function canAutoSolveWithStatus(status: typeof Status[keyof typeof Status]): boo
 	return status === Status.OK;
 }
 
-async function runAutoSolve(correctIndexes: number[], topic: string, currentQuestion: string, variants: string[], mode: 'select' | 'full', recoveryEnabled: boolean, publish: PublishStatus): Promise<'selected' | 'next' | 'finished' | 'reloading'> {
+async function runAutoSolve(correctIndexes: number[], topic: string, currentQuestion: string, variants: string[], mode: 'select' | 'full', recoveryEnabled: boolean, publish: PublishStatus, cancelled: () => boolean): Promise<'selected' | 'next' | 'finished' | 'reloading'> {
+	const local = await localAnswerDb.find(topic, currentQuestion, variants);
+	if (local?.conflicts?.length) throw new Error('Противоречие в локальной базе — проверьте ответы вручную');
+	const assertActive = (): void => {
+		if (cancelled()) throw new Error('Автопрохождение остановлено');
+		if (getQuestionText()?.trim() !== currentQuestion.trim()) throw new Error('Вопрос изменился — проверьте страницу');
+		const current = getVariantTexts();
+		if (current.length !== variants.length || current.some((text, index) => text !== variants[index].trim())) throw new Error('Варианты изменились — проверьте страницу');
+	};
 	if (recoveryEnabled && await quizSessionStore.wasProcessedRecently(topic, currentQuestion, variants)) {
 		throw new Error('Этот вопрос уже обработан — жду обновление страницы');
 	}
-	await clickAnswerIndexes(correctIndexes);
+	assertActive();
+	await clickAnswerIndexes(correctIndexes, assertActive);
+	assertActive();
+	if (!await waitUntil(() => {
+		assertActive();
+		return getVariantElements().every((element, index) => {
+			const input = getAnswerInput(element);
+			return input !== null && input.checked === correctIndexes.includes(index);
+		});
+	}, 1500)) throw new Error('Выбор ответа не подтверждён страницей — остановлено');
 	if (recoveryEnabled) await quizSessionStore.markProcessed(topic, currentQuestion, variants);
 	if (mode === 'select') return 'selected';
 	publish('moving', 'Жду готовность кнопки перехода');
 	const button = await waitForForwardButton();
 	if (!button) throw new Error('Кнопка перехода не стала доступна');
+	assertActive();
 
 	const shouldFinish = isQuestionFinishButton(button);
 	publish(shouldFinish ? 'finishing' : 'moving', shouldFinish ? 'Завершаю тест' : 'Перехожу к следующему вопросу');
@@ -194,35 +217,38 @@ async function runAutoSolve(correctIndexes: number[], topic: string, currentQues
 
 	if (shouldFinish) {
 		const confirmation = await waitForFinishConfirmButton();
+		if (cancelled()) throw new Error('Автопрохождение остановлено');
 		if (confirmation && !isButtonDisabled(confirmation)) confirmation.click();
 		publish('finishing', 'Жду страницу результатов');
 		if (await waitUntil(() => findCompletedQuizResults() !== null, FINISH_RESULTS_TIMEOUT_MS)) return 'finished';
 
+		if (cancelled()) throw new Error('Автопрохождение остановлено');
 		clearStaleQuizFinishBlockers();
 		if (recoveryEnabled && claimQuizFinishReload()) {
 			publish('finishing', 'Страница НМО не ответила — обновляю');
-			window.setTimeout(() => window.location.reload(), 0);
+			window.setTimeout(() => { if (!cancelled()) window.location.reload(); }, 0);
 			return 'reloading';
 		}
 		throw new Error('Страница НМО не ответила — обновите её вручную');
 	}
 
-	if (!await waitForQuestionChange(currentQuestion)) throw new Error('Следующий вопрос не загрузился — повторю попытку');
+	if (!await waitForQuestionChange(currentQuestion)) throw new Error('Следующий вопрос не загрузился — автопрохождение остановлено');
 	return 'next';
 }
 
-async function clickAnswerIndexes(correctIndexes: number[]): Promise<void> {
+async function clickAnswerIndexes(correctIndexes: number[], assertActive: () => void): Promise<void> {
 	const elements = getVariantElements();
 	if (!elements.length) throw new Error('Варианты ответа не найдены');
 	const controls = elements.map(getAnswerInput);
-	if (controls.some(control => control?.type === 'checkbox')) return clickMultiAnswerIndexes(correctIndexes);
+	if (controls.some(control => control?.type === 'checkbox')) return clickMultiAnswerIndexes(correctIndexes, assertActive);
 	if (!clickSingleAnswerIndex(correctIndexes[0])) throw new Error('Не удалось выбрать ответ');
 }
 
-async function clickMultiAnswerIndexes(correctIndexes: number[]): Promise<void> {
+async function clickMultiAnswerIndexes(correctIndexes: number[], assertActive: () => void): Promise<void> {
 	const correct = new Set(correctIndexes);
 	const length = getVariantElements().length;
 	for (let index = 0; index < length; index += 1) {
+		assertActive();
 		const target = getAnswerTargetAt(index);
 		if (!target || target.control.type !== 'checkbox' || target.control.disabled) continue;
 		const shouldBeChecked = correct.has(index);
@@ -283,7 +309,7 @@ async function waitForForwardButton(): Promise<HTMLButtonElement | null> {
 function waitForQuestionChange(previousQuestion: string): Promise<boolean> {
 	return waitUntil(() => {
 		const current = getQuestionText();
-		return current === null || current.trim() !== previousQuestion.trim();
+		return !!current?.trim() && current.trim() !== previousQuestion.trim() && getVariantElements().length > 0;
 	}, QUESTION_CHANGE_TIMEOUT_MS);
 }
 

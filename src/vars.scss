@@ -1,22 +1,22 @@
 // ─── Surfaces ────────────────────────────────────
-$bg-canvas:        #0c1018;
-$bg-frame:         #131826;     // основной фон панели
-$bg-frame-2:       #181d2c;     // raised
-$bg-input:         #0e1320;
-$bg-input-hover:   #131826;
-$bg-chip:          #1d2335;
-$bg-chip-hover:    #252b41;
+$bg-canvas:        var(--nmo-bg-canvas, #0c1018);
+$bg-frame:         var(--nmo-bg-frame, #131826);     // основной фон панели
+$bg-frame-2:       var(--nmo-bg-frame-2, #181d2c);     // raised
+$bg-input:         var(--nmo-bg-input, #0e1320);
+$bg-input-hover:   var(--nmo-bg-input-hover, #131826);
+$bg-chip:          var(--nmo-bg-chip, #1d2335);
+$bg-chip-hover:    var(--nmo-bg-chip-hover, #252b41);
 
 // ─── Borders ─────────────────────────────────────
-$border:           #232a3f;
-$border-soft:      #1b2132;
-$border-strong:    #2d3552;
+$border:           var(--nmo-border, #232a3f);
+$border-soft:      var(--nmo-border-soft, #1b2132);
+$border-strong:    var(--nmo-border-strong, #2d3552);
 
 // ─── Text ────────────────────────────────────────
-$text:             #e7eaf3;
-$text-2:           #a4abc1;
-$text-3:           #6b7390;
-$text-disabled:    #4a5070;
+$text:             var(--nmo-text, #e7eaf3);
+$text-2:           var(--nmo-text-2, #a4abc1);
+$text-3:           var(--nmo-text-3, #929bb4);
+$text-disabled:    var(--nmo-text-disabled, #4a5070);
 
 // ─── Accent (warm mint) ──────────────────────────
 $accent:           #4ade9b;
@@ -29,22 +29,22 @@ $accent-text:      #06231a;     // текст поверх accent-fill (конт
 $success:          #4ade9b;
 $success-soft:     rgba(74, 222, 155, 0.12);
 $success-border:   rgba(74, 222, 155, 0.28);
-$success-text:     #b3f1d2;
+$success-text:     var(--nmo-success-text, #b3f1d2);
 
 $warning:          #f5c14b;
 $warning-soft:     rgba(245, 193, 75, 0.12);
 $warning-border:   rgba(245, 193, 75, 0.28);
-$warning-text:     #f5dba0;
+$warning-text:     var(--nmo-warning-text, #f5dba0);
 
 $danger:           #ff7a7a;
 $danger-soft:      rgba(255, 122, 122, 0.12);
 $danger-border:    rgba(255, 122, 122, 0.28);
-$danger-text:      #ffc4c4;
+$danger-text:      var(--nmo-danger-text, #ffc4c4);
 
 $info:             #7aa9ff;
 $info-soft:        rgba(122, 169, 255, 0.12);
 $info-border:      rgba(122, 169, 255, 0.28);
-$info-text:        #c4d6ff;
+$info-text:        var(--nmo-info-text, #c4d6ff);
 
 // ─── Tier badges (AI models) ─────────────────────
 $tier-low-bg:      $success-soft;

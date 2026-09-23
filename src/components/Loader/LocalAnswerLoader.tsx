@@ -17,8 +17,12 @@ export default function LocalAnswerLoader() {
 		let cancelled = false;
 		void localAnswerDb.find(topic ?? '', question, variants).then(record => {
 			if (cancelled || !record || answerCache.has(topic, question, variants)) return;
+			if (record.conflicts?.length) {
+				setStatus({title: 'В локальной базе противоречие — проверьте вкладку «База»', status: Status.WARN});
+				return;
+			}
 			answerCache.set(topic ?? '', question, variants, record.answers, 1);
-			answerCache.annotate(topic ?? '', question, variants, {source: 'Локальная база', reason: 'Локальная база · 100%', supportCount: 1});
+			answerCache.annotate(topic ?? '', question, variants, {source: 'Локальная база', reason: `Точное совпадение вопроса · ${record.source ?? 'происхождение не указано'}`, supportCount: 1});
 			setStatus({title: 'найдено • локальная база', status: Status.OK});
 		});
 		return () => { cancelled = true; };

@@ -18,6 +18,7 @@ vi.mock('../../api/fetch/fetch-free-ai', () => ({
 
 vi.mock('../../utils/answer-cache', () => ({
 	answerCache: {
+		annotate: vi.fn(),
 		has: mocks.answerCacheHas,
 		set: mocks.answerCacheSet,
 	},

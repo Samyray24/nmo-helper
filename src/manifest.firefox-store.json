@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NMO-Helper",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "description": "Автоподсветка правильных ответов на тестах НМО",
   "icons": {
     "16": "icons/icon16.png",
@@ -42,7 +42,8 @@
     "https://*.tests-nmo.ru/*",
     "https://openai.api.proxyapi.ru/*",
     "https://llama-3-3-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/*",
-    "https://oai.aihorde.net/*"
+    "https://oai.aihorde.net/*",
+    "https://api.github.com/*"
   ],
   "optional_host_permissions": [
     "https://*/*"

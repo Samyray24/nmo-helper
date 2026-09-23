@@ -5,7 +5,7 @@ import SectionBase from './index';
 const mocks = vi.hoisted(() => ({stats: vi.fn(), listUnknown: vi.fn()}));
 vi.mock('../../utils/local-answer-db', () => ({localAnswerDb: {
 	stats: mocks.stats, listUnknown: mocks.listUnknown,
-	listAnswers: vi.fn(), merge: vi.fn(), replace: vi.fn(), clear: vi.fn(),
+	listAnswers: vi.fn().mockResolvedValue([]), merge: vi.fn(), replace: vi.fn(), clear: vi.fn(),
 }}));
 
 describe('SectionBase', () => {
@@ -23,3 +23,5 @@ describe('SectionBase', () => {
 		expect(screen.getByText('Последние неизвестные вопросы').closest('details')).not.toHaveAttribute('open');
 	});
 });
+
+vi.mock('../../contexts/SettingsContext', () => ({useSettings: () => ({autoSolve: {setEnabled: vi.fn()}})}));

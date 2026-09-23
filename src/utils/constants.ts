@@ -21,7 +21,7 @@ export const LOW_CONFIDENCE_THRESHOLD = 0.5;
 export const CACHE_MAX_TOPICS = 10;
 
 /** Ссылка на страницу обновления расширения */
-export const UPDATE_URL = 'https://nmo-helper.ru/update';
+export const UPDATE_URL = 'https://github.com/Samyray24/nmo-helper/releases/latest';
 
 /** Домены баз поиска ответов. Конкретные адреса хранятся только здесь. */
 export const FIRST_ANSWER_SOURCE_HOST = 'rosmedicinfo.ru';

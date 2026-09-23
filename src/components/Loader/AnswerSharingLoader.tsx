@@ -139,6 +139,7 @@ function sendSnapshot(snapshot: IAnswerSharingSnapshot): void {
 export async function learnSnapshotLocally(snapshot: IAnswerSharingSnapshot): Promise<void> {
 	await localAnswerDb.merge(snapshot.questions.map(question => ({
 		topic: snapshot.title,
+		source: 'Подтверждено страницей результатов НМО',
 		question: question.text,
 		variants: [...question.options],
 		answers: question.correct_indexes.map(index => question.options[index]).filter((value): value is string => typeof value === 'string'),

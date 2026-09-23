@@ -97,7 +97,7 @@ export function fetchViaBackground(url: string, options: IRequestOptions = {}): 
 				const result = response ?? requestFailure('Background did not return a response.');
 				const duration = Date.now() - startedAt;
 				diagnostics.recordNetwork(url, result.status, duration, result.error);
-				sourceHealth.record(url, result.status, duration, result.error);
+				sourceHealth.record(url, result.status, duration, result.error, Date.now(), result.message);
 				resolve(result);
 			});
 		} catch (error) {

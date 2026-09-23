@@ -16,12 +16,14 @@ const mocks = vi.hoisted(() => ({
 	isSingle: true,
 	getCachedAnswer: vi.fn(),
 	setAutoStatus: vi.fn(),
+	setEnabled: vi.fn(),
 }));
 
 vi.mock('../../contexts/SettingsContext', () => ({
 	useSettings: () => ({
 		autoSolve: {
 			enabled: mocks.autoSolveEnabled,
+			setEnabled: mocks.setEnabled,
 			mode: mocks.autoSolveMode,
 			confidenceThreshold: mocks.confidenceThreshold,
 			delayMinSeconds: mocks.delayMinSeconds,
@@ -76,6 +78,7 @@ beforeEach(() => {
 		idx: [1],
 	});
 	mocks.setAutoStatus.mockReset();
+	mocks.setEnabled.mockReset();
 
 	document.body.innerHTML = createQuizMarkup('radio');
 });
@@ -88,6 +91,33 @@ afterEach(() => {
 });
 
 describe('AutoSolveLoader', () => {
+	it('останавливается во время ожидания кнопки и не нажимает её после Стоп', async () => {
+		const button = getNextButton(); button.disabled = true;
+		const clicked = vi.fn(); button.addEventListener('click', clicked);
+		const view = render(<AutoSolveLoader/>);
+		await advanceTime(900);
+		mocks.autoSolveEnabled = false;
+		view.rerender(<AutoSolveLoader/>);
+		button.disabled = false;
+		await advanceTime(1000);
+		expect(clicked).not.toHaveBeenCalled();
+	});
+	it('не принимает исчезновение вопроса за успешный переход', async () => {
+		getNextButton().addEventListener('click', () => document.querySelector('#questionAnchor')?.remove());
+		render(<AutoSolveLoader/>);
+		await advanceTime(9000);
+		expect(mocks.setEnabled).toHaveBeenCalledWith(false);
+		expect(mocks.setAutoStatus).not.toHaveBeenCalledWith(expect.objectContaining({message: 'Следующий вопрос открыт'}));
+	});
+	it('останавливается, если страница отменила выбор ответа', async () => {
+		getAnswerInputs()[1].addEventListener('click', event => event.preventDefault());
+		const clicked = vi.fn(); getNextButton().addEventListener('click', clicked);
+		render(<AutoSolveLoader/>);
+		await advanceTime(2500);
+		expect(clicked).not.toHaveBeenCalled();
+		expect(mocks.setEnabled).toHaveBeenCalledWith(false);
+	});
+
 	it('в осторожном режиме ничего не нажимает', async () => {
 		mocks.autoSolveMode = 'highlight';
 		const nextClick = vi.fn();
@@ -331,7 +361,7 @@ describe('AutoSolveLoader', () => {
 		expect(nextClick).toHaveBeenCalledOnce();
 	});
 
-	it('использует контейнер варианта, если у radio-ответа нет input', async () => {
+	it('не переходит дальше, если состояние ответа нельзя проверить', async () => {
 		document.body.innerHTML = createQuizMarkupWithoutInputs();
 		const variants = Array.from(document.querySelectorAll<HTMLElement>('.mdc-form-field span'));
 		const answerClick = vi.fn();
@@ -340,10 +370,11 @@ describe('AutoSolveLoader', () => {
 		getNextButton().addEventListener('click', nextClick);
 
 		render(<AutoSolveLoader/>);
-		await advanceTime(1000);
+		await advanceTime(2500);
 
 		expect(answerClick).toHaveBeenCalledOnce();
-		expect(nextClick).toHaveBeenCalledOnce();
+		expect(nextClick).not.toHaveBeenCalled();
+		expect(mocks.setEnabled).toHaveBeenCalledWith(false);
 	});
 });
 

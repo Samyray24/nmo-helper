@@ -7,6 +7,7 @@
  * @module api/fetch/search-variant-sources
  */
 
+import {sourceHealth} from '../../utils/source-health';
 import type {ISearchResult} from '../../types';
 import {FIRST_ANSWER_SOURCE_HOST, NMO_API_HOST, SECOND_ANSWER_SOURCE_HOST, THIRD_ANSWER_SOURCE_HOST} from '../../utils/constants';
 import {parseNmoApiSearchResults, parsePrimarySourceResults, parseSecondarySourceResults, parseThirdSourceResults} from '../../utils/html';
@@ -67,7 +68,9 @@ async function requestNmoSource(normalizedQuery: string): Promise<ISearchResult[
 
 	if (response.error || !response.text) return [];
 
-	return parseNmoApiSearchResults(response.text);
+	const parsed = parseNmoApiSearchResults(response.text);
+	if (response.status >= 200 && response.status < 300) sourceHealth.recordSearchResult(url.toString(), parsed.length);
+	return parsed;
 }
 
 /** Очищает короткий кеш поиска, например после смены активной сессии страницы. */
@@ -108,7 +111,9 @@ export async function searchFirstSource(query: string): Promise<ISearchResult[]>
 
 	if (response.error || !response.text) return [];
 
-	return parsePrimarySourceResults(response.text);
+	const parsed = parsePrimarySourceResults(response.text);
+	if (response.status >= 200 && response.status < 300) sourceHealth.recordSearchResult(FIRST_SOURCE_URL, parsed.length);
+	return parsed;
 }
 
 /** Ищет варианты во второй базе ответов. */
@@ -123,7 +128,9 @@ export async function searchSecondarySource(query: string): Promise<ISearchResul
 
 	if (response.error || !response.text) return [];
 
-	return parseSecondarySourceResults(response.text);
+	const parsed = parseSecondarySourceResults(response.text);
+	if (response.status >= 200 && response.status < 300) sourceHealth.recordSearchResult(url.toString(), parsed.length);
+	return parsed;
 }
 
 /** Ищет варианты в третьей базе ответов. */
@@ -136,5 +143,7 @@ export async function searchThirdSource(query: string): Promise<ISearchResult[]>
 
 	if (response.error || !response.text) return [];
 
-	return parseThirdSourceResults(response.text);
+	const parsed = parseThirdSourceResults(response.text);
+	if (response.status >= 200 && response.status < 300) sourceHealth.recordSearchResult(url, parsed.length);
+	return parsed;
 }
