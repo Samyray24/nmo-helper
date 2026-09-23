@@ -13,15 +13,15 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/Samyray24/nmo-helper/blob/main/LICENSE)
 
 🌐 **Сайт исходного проекта:** [nmo-helper.ru](https://nmo-helper.ru)<br>
-📖 **Инструкция:** [nmo-helper.ru/instruction](https://nmo-helper.ru/instruction)<br>
-💬 **Обратная связь:** [nmo-helper.ru/feedback](https://nmo-helper.ru/feedback)<br>
+📖 **Начните здесь:** [подробная инструкция по установке с картинкой](INSTALL.md)<br>
+📦 **Готовые файлы:** [скачать последнюю версию](https://github.com/Samyray24/nmo-helper/releases/latest)<br>
 🐞 **Баги и предложения:** [GitHub Issues](https://github.com/Samyray24/nmo-helper/issues)
 
 ---
 
 ## Изменения 5.5.1
 
-Версия подписана именем Samyray24 в окне расширения, описании проекта и браузерных метаданных. Все сборки содержат AUTHORS.md и исходную лицензию MIT.
+Версия обозначена именем Samyray24 в окне расширения, описании проекта и браузерных метаданных. Все сборки содержат AUTHORS.md и исходную лицензию MIT.
 
 ## Изменения 5.5.0
 
@@ -56,47 +56,26 @@
 
 ---
 
-## Установка
+## 🚀 Установка
 
-### Комплект браузеров: Windows и Linux
+**[Открыть подробную инструкцию →](INSTALL.md)** — со скриншотом, адресами страниц расширений, объяснением режима разработчика и решениями частых ошибок.
 
-`npm run package:all` создаёт общий ZIP: Chromium-браузеры, Firefox 140+ и отдельный
-Firefox 102+ на Manifest V2. XPI пока не подписаны Mozilla. Исходники для конвертации
-Safari также включены; готового приложения Safari нет. Подробности: [BROWSERS.md](BROWSERS.md).
+1. Откройте **[последний выпуск](https://github.com/Samyray24/nmo-helper/releases/latest)** и раскройте список **Assets**.
+2. Выберите файл по таблице ниже. Вместо `<версия>` в имени будет номер выпуска.
+3. Следуйте инструкции для своего браузера. **Node.js, npm и терминал для установки не нужны.**
 
-### Windows и Linux — единый пакет для Яндекс Браузера
+| Ваш браузер | Что скачать | Как установить |
+|---|---|---|
+| 🌐 Chrome, Chromium, Edge, Brave, Opera, Vivaldi — Windows / Linux | `nmo-helper-chromium-<версия>.zip` | [Распаковать → режим разработчика → загрузить папку](INSTALL.md#chromium) |
+| 🟡 Яндекс Браузер — Windows / Linux | `nmo-helper-yandex-windows-linux-<версия>.crx` | [Перетащить файл на страницу дополнений](INSTALL.md#yandex) |
+| 🦊 Firefox — Windows / Linux / Astra Linux | `nmo-helper-all-browsers-<версия>.zip` | [Выбрать сборку по версии Firefox и загрузить временно](INSTALL.md#firefox) |
+| 🐧 Несколько браузеров в Linux | `nmo-helper-linux-<версия>.tar.gz` | [Инструкция для Linux и Астры](LINUX.md) |
 
-`npm run package:yandex` создаёт CRX3 для прямой установки в Яндекс Браузер и ZIP
-для установки из папки. Оба содержат текущие изменения. Инструкция: [INSTALL.md](INSTALL.md).
+> 🦊 Firefox: текущие пакеты **не подписаны Mozilla**, поэтому обычная постоянная установка пока недоступна. Временное дополнение удаляется после перезапуска браузера. Сборка `firefox` рассчитана на 140+, `firefox-esr` — на 102+. Совместимость с каждым старым выпуском не гарантируется.
+>
+> ⏸️ Для новой установки полное автопрохождение включено по умолчанию. Перед работой ознакомьтесь с [первым запуском и режимами автоматизации](INSTALL.md#first-start).
 
-### Linux — текущая изменённая сборка
-
-Инструкция для Chrome/Chromium и Firefox: [LINUX.md](LINUX.md).
-Команда `npm run package:linux` собирает архив `releases/nmo-helper-linux-5.5.1.tar.gz`
-с исправлениями и дополнительными базами. Для установки готового архива Node.js не нужен.
-
-### Chrome / Yandex / Edge / Brave / Opera
-
-1. Скачайте [`nmo-helper-chromium-5.5.1.zip`](https://github.com/Samyray24/nmo-helper/releases/download/v5.5.1/nmo-helper-chromium-5.5.1.zip)
-2. Разархивируйте в удобную папку
-3. Откройте `chrome://extensions/` в адресной строке
-4. Включите **«Режим разработчика»** (правый верхний угол)
-5. Нажмите **«Загрузить распакованное расширение»**
-6. Выберите папку `nmo-helper-chrome-5.5.0`
-
-<details>
-<summary>📹 Показать GIF-инструкцию</summary>
-
-![Установка Chrome](demo/setup_1.gif)
-</details>
-
-### Mozilla Firefox
-
-Сборки этого репозитория пока **неподписанные**. Дополнение исходного автора в Firefox Add-ons не содержит изменений этой версии.
-
-Для временной проверки распакуйте подходящий пакет (Firefox 140+ или ESR 102+), откройте `about:debugging#/runtime/this-firefox` → «Загрузить временное дополнение» и выберите `manifest.json`. После перезапуска Firefox временная установка удаляется.
-
-Для обычной постоянной установки требуется подпись Mozilla. [Подготовленный комплект и порядок подписи](docs/MOZILLA_SIGNING.md). Не отключайте ограничения подписи в рабочем браузере ради тестовой сборки.
+🔄 [Как обновлять](INSTALL.md#update) · 🛠️ [Если не получилось](INSTALL.md#troubleshooting) · 🌍 [Совместимость браузеров](BROWSERS.md)
 
 ---
 
@@ -108,7 +87,7 @@ Safari также включены; готового приложения Safari
 
 ### Режимы работы
 
-Переключение между режимами через таб-бар в панели: **Авто** / **Сайты** / **AI** / **PDF**.
+Переключение между режимами через таб-бар в панели: **Авто** / **Сайты** / **AI** / **PDF** / **База**.
 
 ### Авто
 
