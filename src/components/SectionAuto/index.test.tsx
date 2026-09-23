@@ -481,7 +481,7 @@ describe('SectionAuto', () => {
 		act(() => testState.answerChanges.get(NMO_API_RESULT_URL)?.({loading: false, error: null, data: makeModel('nmo-helper')}));
 
 		await waitFor(() => expect(screen.getByText('Как найден ответ')).toBeInTheDocument());
-		expect(screen.getByText('Точность: 93%')).toBeInTheDocument();
+		expect(screen.getByText('Совпадение текста: 93%')).toBeInTheDocument();
 		expect(screen.getByText('Вопрос из базы')).toBeInTheDocument();
 		expect(screen.getByRole('link', {name: /открыть источник/i})).toHaveAttribute('href', NMO_API_RESULT_URL);
 	});

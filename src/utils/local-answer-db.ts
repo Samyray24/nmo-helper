@@ -13,6 +13,8 @@ export interface ILocalAnswerRecord {
 	readonly variants: string[];
 	readonly answers: string[];
 	readonly updatedAt?: number;
+	readonly source?: string;
+	readonly conflicts?: string[][];
 }
 
 export interface IUnknownQuestionRecord {
@@ -42,7 +44,12 @@ class LocalAnswerDb {
 	}
 
 	public async replace(records: readonly ILocalAnswerRecord[]): Promise<void> {
-		const normalized = records.map(normalizeAnswer);
+		const unique = new Map<string, Required<ILocalAnswerRecord>>();
+		for (const item of records.map(normalizeAnswer)) {
+			const previous = unique.get(item.id);
+			unique.set(item.id, previous ? combineAnswers(previous, item) : item);
+		}
+		const normalized = [...unique.values()];
 		if (this.memoryOnly) {
 			this.memoryAnswers.clear();
 			for (const record of normalized.slice(-MAX_MEMORY_RECORDS)) this.memoryAnswers.set(record.id, record);
@@ -60,22 +67,35 @@ class LocalAnswerDb {
 		}
 	}
 
-	public async merge(records: readonly ILocalAnswerRecord[]): Promise<void> {
+	public async merge(records: readonly ILocalAnswerRecord[], resolveConflicts = false): Promise<void> {
 		const normalized = records.map(normalizeAnswer);
+		const pending = new Map<string, Required<ILocalAnswerRecord>>();
+		for (const record of normalized) {
+			const previous = pending.get(record.id) ?? await this.get<Required<ILocalAnswerRecord>>(ANSWERS_STORE, record.id);
+			if (previous && !resolveConflicts) {
+				pending.set(record.id, combineAnswers(previous, record));
+			} else pending.set(record.id, record);
+		}
 		if (this.memoryOnly) {
-			for (const record of normalized) this.memoryAnswers.set(record.id, record);
+			for (const record of pending.values()) this.memoryAnswers.set(record.id, record);
 			trimMap(this.memoryAnswers);
 			return;
 		}
 		try {
 			const db = await this.open();
 			await transactionDone(db, ANSWERS_STORE, 'readwrite', store => {
-				for (const record of normalized) store.put(record);
+				for (const record of pending.values()) store.put(record);
 			});
 		} catch {
 			this.useMemory();
-			await this.merge(records);
+			await this.merge(records, resolveConflicts);
 		}
+	}
+
+	public async remove(id: string): Promise<void> {
+		if (this.memoryOnly) { this.memoryAnswers.delete(id); return; }
+		const db = await this.open();
+		await transactionDone(db, ANSWERS_STORE, 'readwrite', store => store.delete(id));
 	}
 
 	public async listAnswers(): Promise<ILocalAnswerRecord[]> {
@@ -178,12 +198,20 @@ class LocalAnswerDb {
 
 export const localAnswerDb = new LocalAnswerDb();
 
+function combineAnswers(previous: ILocalAnswerRecord, next: ILocalAnswerRecord): Required<ILocalAnswerRecord> {
+	const choices = [previous.answers, ...(previous.conflicts ?? []), next.answers, ...(next.conflicts ?? [])];
+	const unique = [...new Map(choices.map(answers => [JSON.stringify([...answers].sort()), answers])).values()];
+	return normalizeAnswer({...previous, conflicts: unique.length > 1 ? unique : []});
+}
+
 function normalizeAnswer(record: ILocalAnswerRecord): Required<ILocalAnswerRecord> {
 	return {
 		id: questionFingerprint(record.topic, record.question, record.variants),
 		topic: record.topic.trim(), question: record.question.trim(),
 		variants: record.variants.map(value => value.trim()), answers: record.answers.map(value => value.trim()),
 		updatedAt: record.updatedAt ?? Date.now(),
+		source: record.source ?? 'Происхождение не указано',
+		conflicts: (record.conflicts ?? []).map(answers => [...answers]),
 	};
 }
 
@@ -196,7 +224,7 @@ function normalizeUnknown(record: IUnknownQuestionRecord): Required<IUnknownQues
 }
 
 function cloneAnswer(record: Required<ILocalAnswerRecord>): ILocalAnswerRecord {
-	return {...record, variants: [...record.variants], answers: [...record.answers]};
+	return {...record, variants: [...record.variants], answers: [...record.answers], conflicts: (record.conflicts ?? []).map(answers => [...answers])};
 }
 
 function trimMap<T>(map: Map<string, T>): void {

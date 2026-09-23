@@ -32,7 +32,9 @@ export async function searchAdditionalSource(query: string, source: AdditionalSo
 	url.searchParams.set('s', normalized);
 	const results = await cachedLoad(searchCache, url.href, 4 * 60 * 1000, 60, async () => {
 		const response = await fetchViaBackground(url.href, REQUEST_OPTIONS);
-		return parseAdditionalSearchResults(getResponseText(response), source);
+		const parsed = parseAdditionalSearchResults(getResponseText(response), source);
+		sourceHealth.recordSearchResult(url.href, parsed.length);
+		return parsed;
 	});
 	return results.map(result => ({...result}));
 }

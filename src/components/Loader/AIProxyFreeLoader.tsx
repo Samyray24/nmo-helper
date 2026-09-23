@@ -52,6 +52,7 @@ const AIProxyFreeLoader = ({active, onChange}: IAIProxyFreeLoaderProps) => {
 
 				const answers = correctIndexes.map(index => variants[index]);
 				answerCache.set(currentTopic, currentQuestion, variants, answers);
+				answerCache.annotate(currentTopic, currentQuestion, variants, {source: 'AI', reason: 'Ответ модели, не подтверждён базой', supportCount: 1});
 				setStatus({
 					title: `AI · ${source}: вариант${correctIndexes.length > 1 ? 'ы' : ''} ${correctIndexes.map(index => index + 1).join(', ')}`,
 					status: Status.OK,

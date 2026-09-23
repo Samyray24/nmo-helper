@@ -1,5 +1,4 @@
 @use 'vars' as *;
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 // ─── Panel container ─────────────────────────────
 #nmo-panel {
@@ -7,7 +6,7 @@
   top: 16px;
   right: 16px;
   z-index: 99999;
-  width: min(#{$panel-width}, calc(100vw - 16px));
+  width: min(#{$panel-width}, calc(100vw - 32px));
   background: $bg-frame;
   border: 1px solid $border;
   border-radius: $r-xl;
@@ -22,13 +21,13 @@
   font-feature-settings: 'ss01', 'cv11';
 
   &.collapsed {
-    width: $pill-width;
+    width: min(#{$pill-width}, calc(100vw - 32px));
     border-radius: $r-lg;
     box-shadow: $shadow-pill;
   }
 }
 
-* { box-sizing: border-box; }
+#nmo-panel, #nmo-panel * { box-sizing: border-box; }
 
 #nmo-panel,
 #nmo-panel * {
@@ -529,3 +528,33 @@ textarea.nmo-input {
 .nmo-col { display: flex; flex-direction: column; }
 .nmo-between { justify-content: space-between; }
 .nmo-grow { flex: 1; min-width: 0; }
+
+.nmo-fullpanel { max-height: calc(100vh - 32px); overflow-y: auto; overflow-x: hidden; }
+#nmo-panel :focus-visible { outline: 2px solid $accent; outline-offset: 2px; }
+.nmo-titlebar { flex-wrap: wrap; }
+.nmo-base-record { padding: 10px 0; border-bottom: 1px solid $border; overflow-wrap: anywhere; }
+.nmo-base-choice { display: flex; align-items: start; gap: 6px; margin: 8px 0; }
+@media (prefers-reduced-motion: reduce) { #nmo-panel * { animation: none !important; transition: none !important; } }
+
+#nmo-panel[data-theme="light"] {
+  --nmo-bg-canvas: #f5f7fa;
+  --nmo-bg-frame: #ffffff;
+  --nmo-bg-frame-2: #f4f6fa;
+  --nmo-bg-input: #f6f8fb;
+  --nmo-bg-input-hover: #fff;
+  --nmo-bg-chip: #edf1f6;
+  --nmo-bg-chip-hover: #e1e8f0;
+  --nmo-border: #d3dce7;
+  --nmo-border-soft: #e1e7ef;
+  --nmo-border-strong: #a5b4c6;
+  --nmo-text: #1b293b;
+  --nmo-text-2: #43546a;
+  --nmo-text-3: #586a7f;
+  --nmo-text-disabled: #65768a;
+  --nmo-success-text: #17653e;
+  --nmo-warning-text: #775500;
+  --nmo-danger-text: #a32121;
+  --nmo-info-text: #234f92;
+}
+
+.nmo-provenance { margin: 0 14px 10px; padding: 8px; font-size: 11px; color: $text-2; background: $bg-input; border-radius: 6px; overflow-wrap: anywhere; }

@@ -7,6 +7,16 @@
 
 import {isProtectedNmoApiRequest} from './api/fetch/fetch';
 import {fetchSignedNmoRequest} from './api/nmo-auth';
+import {credentialGet, credentialSet} from './api/credential-storage';
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+	if (message?.action !== 'credential-get' && message?.action !== 'credential-set') return false;
+	if (sender.id !== chrome.runtime.id || !['apiKey', 'customAiToken'].includes(message.key)) return false;
+	if (message.action === 'credential-set' && typeof message.value !== 'string') return false;
+	const request = message.action === 'credential-get' ? credentialGet(message.key, true) : credentialSet(message.key, message.value, true);
+	void request.then(value => sendResponse({value})).catch(() => sendResponse({error: true}));
+	return true;
+});
 
 /** Формат сообщения от content-скрипта */
 interface IFetchMessage {

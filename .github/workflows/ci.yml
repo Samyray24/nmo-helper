@@ -38,6 +38,9 @@ jobs:
       - name: Собрать браузерные варианты
         run: npm run build
 
+      - name: Установить тестовый Chromium
+        run: npx playwright install --with-deps chromium
+
       - name: Проверить панель в Chromium
         run: npm run test:e2e
 

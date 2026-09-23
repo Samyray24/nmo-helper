@@ -2,7 +2,6 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {IVersionInfo} from '../../api/version-check';
 import {Status, type IStatusInfo} from '../../types';
-import {UPDATE_URL} from '../../utils/constants';
 import Header from './index';
 
 interface IQuestionState {
@@ -137,9 +136,9 @@ describe('Header', () => {
 		fireEvent.click(screen.getByRole('button', {name: 'Имитировать обновление'}));
 
 		expect(screen.getByText('Доступна v4.4.0')).toBeInTheDocument();
-		expect(screen.getByText('у вас v4.3.0 — обновите расширение')).toBeInTheDocument();
-		expect(screen.getByRole('link', {name: 'Обновить'})).toHaveAttribute('href', UPDATE_URL);
-		expect(screen.getByRole('link', {name: 'Обновить'})).toHaveAttribute('target', '_blank');
+		expect(screen.getByText(/у вас v4.3.0/)).toBeInTheDocument();
+		expect(screen.getByRole('link', {name: 'Скачать'})).toHaveAttribute('href', 'https://github.com/Samyray24/nmo-helper/releases/download/v4.4.0/nmo-helper-chromium-4.4.0.zip');
+		expect(screen.getByRole('link', {name: 'Скачать'})).toHaveAttribute('target', '_blank');
 
 		fireEvent.click(document.querySelector<HTMLButtonElement>('.nmo-update-close')!);
 		expect(screen.queryByText('Доступна v4.4.0')).not.toBeInTheDocument();
@@ -173,3 +172,5 @@ describe('Header', () => {
 		expect(screen.getByRole('button', {name: 'показать полностью →'})).toBeInTheDocument();
 	});
 });
+
+vi.mock('../../contexts/SettingsContext', () => ({useSettings: () => ({autoSolve: {enabled: true, setEnabled: vi.fn()}})}));

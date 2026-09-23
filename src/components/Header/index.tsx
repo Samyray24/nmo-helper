@@ -5,11 +5,14 @@ import {usePanelUi} from '../../contexts/PanelUiContext';
 import {usePanelStatus} from '../../contexts/PanelStatusContext';
 import {useQuestionFinder} from '../../contexts/QuestionFinderContext';
 import {IconBug, IconClose, IconMinimize, IconWarn} from '../icons';
+import StopAutoSolve from '../StopAutoSolve';
+import ThemeToggle from '../ThemeToggle';
 import VersionCheck from '../VersionCheck';
 import BugReportButton from '../BugReportButton';
 import Settings from '../Settings';
 import {UPDATE_URL} from '../../utils/constants';
 import type {IVersionInfo} from '../../api/version-check';
+import {releaseDownloadUrl} from '../../api/version-check';
 
 const Header: React.FC = (): React.JSX.Element => {
 	const {setCollapsed} = usePanelUi();
@@ -29,7 +32,7 @@ const Header: React.FC = (): React.JSX.Element => {
 					<span className="nmo-brand-name">NMO Helper</span>
 					<VersionCheck onOutdated={setUpdate}/>
 				</div>
-				<div className="nmo-titlebar-ctrl">
+				<div className="nmo-titlebar-ctrl"><StopAutoSolve/><ThemeToggle/>
 					{canReport && (
 						<button type="button"
 							className={cn('nmo-icon-btn', 'nmo-titlebar-bug', status.status)}
@@ -124,11 +127,11 @@ const UpdateBanner: React.FC<{info: IVersionInfo; onClose: () => void}> = ({info
 
 		<div className="nmo-update-body">
 			<div className="nmo-update-title">Доступна v{info.latest}</div>
-			<div className="nmo-update-sub">у вас v{info.current} — обновите расширение</div>
+			<div className="nmo-update-sub">у вас v{info.current} · <a href={UPDATE_URL} target="_blank" rel="noreferrer">Что изменилось</a></div>
 		</div>
 
-		<a className="nmo-update-cta" href={UPDATE_URL}	target="_blank"	rel="noreferrer">Обновить</a>
-		<button type="button" className="nmo-icon-btn nmo-update-close" onClick={onClose}>
+		<a className="nmo-update-cta" href={releaseDownloadUrl(info.latest)} target="_blank" rel="noreferrer">Скачать</a>
+		<button type="button" aria-label="Закрыть уведомление об обновлении" className="nmo-icon-btn nmo-update-close" onClick={onClose}>
 			<IconClose size={12}/>
 		</button>
 	</div>

@@ -262,7 +262,7 @@ const SectionAuto: React.FC = (): React.JSX.Element => {
 							{evidence.kind === 'answer' ? evidence.best.found.answers.join(', ') : 'Нужна ручная проверка'}
 						</div>
 					</div>
-					{evidence.kind === 'answer' && <span className="nmo-auto-confidence">{Math.round(evidence.best.found.score * 100)}%</span>}
+					{evidence.kind === 'answer' && <span title="Сходство текста вопроса, не вероятность правильного ответа" className="nmo-auto-confidence">{Math.round(evidence.best.found.score * 100)}%</span>}
 				</div>
 				<div className="nmo-auto-evidence-support">
 					{evidence.kind === 'answer'
@@ -275,7 +275,7 @@ const SectionAuto: React.FC = (): React.JSX.Element => {
 						{evidence.matches.map((match, index) => <div className="nmo-auto-evidence-source" key={`${match.source.url}-${index}`}>
 							<div className="nmo-auto-evidence-row">
 								<strong>{match.source.label}</strong>
-								<span>Точность: {Math.round(match.found.score * 100)}%</span>
+								<span>Совпадение текста: {Math.round(match.found.score * 100)}%</span>
 							</div>
 							<div className="nmo-auto-evidence-question">{match.found.matchedQuestion || question}</div>
 							<div className="nmo-auto-evidence-answers">{match.found.answers.join(', ')}</div>

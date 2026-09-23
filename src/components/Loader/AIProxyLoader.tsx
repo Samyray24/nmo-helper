@@ -56,6 +56,7 @@ const AIProxyLoader = ({ active, apiKey, model, aiUrl, onChange }: IAiSolverProp
 
 				const answers = correctIndexes.map(i => variants[i]);
 				answerCache.set(t, q, variants, answers);
+				answerCache.annotate(t, q, variants, {source: 'AI', reason: 'Ответ модели, не подтверждён базой', supportCount: 1});
 
 				setStatus({ title: `AI: вариант${correctIndexes.length > 1 ? 'ы' : ''} ${correctIndexes.map(i => i + 1).join(', ')}`, status: Status.OK });
 			} catch (err) {

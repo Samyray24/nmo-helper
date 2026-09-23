@@ -1,21 +1,23 @@
-# NMO Helper v5.4.0
+# NMO Helper v5.5.0
 
 > Умный помощник в прохождении тестов НМО на портале [edu.rosminzdrav.ru](https://a.edu.rosminzdrav.ru) — бесплатное расширение для браузера с открытым исходным кодом.
 
 Авто-поиск по базам ответов, автоответ с настраиваемым интервалом, AI-режим (GPT, Gemini, Claude, DeepSeek), PDF-режим: поиск по клиническим рекомендациям — всё работает из коробки.
 
-[![Firefox Add-ons](https://img.shields.io/amo/v/nmo-helper?style=flat-square&label=Firefox%20Add-ons&color=ff9500&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/ru/firefox/addon/nmo-helper/)
 [![Downloads](https://img.shields.io/github/downloads/Samyray24/nmo-helper/total?style=flat-square&label=скачиваний&color=667eea&cacheSeconds=3600)](https://github.com/Samyray24/nmo-helper/releases)
 [![Stars](https://img.shields.io/github/stars/Samyray24/nmo-helper?style=flat-square&color=fbbf24&cacheSeconds=3600)](https://github.com/Samyray24/nmo-helper)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/Samyray24/nmo-helper/blob/main/LICENSE)
-[![VirusTotal](https://img.shields.io/badge/VirusTotal-Clean-brightgreen?style=flat-square&logo=virustotal)](https://www.virustotal.com/gui/file/dd746259d7a4eefdaadd88e33c2fec39eca2ee848b05cee036a6713b29459c7d?nocache=1)
 
-🌐 **Сайт:** [nmo-helper.ru](https://nmo-helper.ru)<br>
+🌐 **Сайт исходного проекта:** [nmo-helper.ru](https://nmo-helper.ru)<br>
 📖 **Инструкция:** [nmo-helper.ru/instruction](https://nmo-helper.ru/instruction)<br>
 💬 **Обратная связь:** [nmo-helper.ru/feedback](https://nmo-helper.ru/feedback)<br>
 🐞 **Баги и предложения:** [GitHub Issues](https://github.com/Samyray24/nmo-helper/issues)
 
 ---
+
+## Изменения 5.5.0
+
+Обновления из этого GitHub, проверка результата автокликов и постоянная кнопка «Стоп», редактор базы с противоречиями, резервные копии без ключей, статусы источников, светлая тема и исправление хранения AI-ключей. [Подробности и проверенные среды](docs/RELEASE_5.5.md).
 
 ## Возможности
 
@@ -23,7 +25,7 @@
 |---|---|
 | **Авто-поиск** | Автоматически находит тему теста и ищет её в базах ответов |
 | **AI-режим** | Решает тесты бесплатными моделями без ключа либо через ProxyAPI / свой endpoint |
-| **Общая база NMO Helper** | Ищет ответы в собственной базе; завершённым тестом можно поделиться только с согласия пользователя |
+| **Общая база NMO Helper** | Ищет ответы в базе исходного проекта; завершённым тестом можно поделиться только с согласия пользователя |
 | **PDF-режим** | Поиск по клиническим рекомендациям из локального PDF, со score для вариантов |
 | **Ручной поиск** | Поиск ответов по названию теста в поддерживаемых базах |
 | **Автоподсветка** | Правильные ответы подсвечиваются при переходе между вопросами |
@@ -62,17 +64,17 @@ Safari также включены; готового приложения Safari
 ### Linux — текущая изменённая сборка
 
 Инструкция для Chrome/Chromium и Firefox: [LINUX.md](LINUX.md).
-Команда `npm run package:linux` собирает архив `releases/nmo-helper-linux-5.4.0.tar.gz`
+Команда `npm run package:linux` собирает архив `releases/nmo-helper-linux-5.5.0.tar.gz`
 с исправлениями и дополнительными базами. Для установки готового архива Node.js не нужен.
 
 ### Chrome / Yandex / Edge / Brave / Opera
 
-1. Скачайте [`nmo-helper-chromium-5.4.0.zip`](https://github.com/Samyray24/nmo-helper/releases/download/v5.4.0/nmo-helper-chromium-5.4.0.zip)
+1. Скачайте [`nmo-helper-chromium-5.5.0.zip`](https://github.com/Samyray24/nmo-helper/releases/download/v5.5.0/nmo-helper-chromium-5.5.0.zip)
 2. Разархивируйте в удобную папку
 3. Откройте `chrome://extensions/` в адресной строке
 4. Включите **«Режим разработчика»** (правый верхний угол)
 5. Нажмите **«Загрузить распакованное расширение»**
-6. Выберите папку `nmo-helper-chrome-5.4.0`
+6. Выберите папку `nmo-helper-chrome-5.5.0`
 
 <details>
 <summary>📹 Показать GIF-инструкцию</summary>
@@ -82,23 +84,11 @@ Safari также включены; готового приложения Safari
 
 ### Mozilla Firefox
 
-**Способ 1 (рекомендуется) — из Firefox Add-ons:**
+Сборки этого репозитория пока **неподписанные**. Дополнение исходного автора в Firefox Add-ons не содержит изменений этой версии.
 
-Откройте страницу расширения в [Firefox Add-ons](https://addons.mozilla.org/ru/firefox/addon/nmo-helper/) и нажмите **«Добавить в Firefox»**. Расширение проверено и подписано Mozilla, обновляется автоматически.
+Для временной проверки распакуйте подходящий пакет (Firefox 140+ или ESR 102+), откройте `about:debugging#/runtime/this-firefox` → «Загрузить временное дополнение» и выберите `manifest.json`. После перезапуска Firefox временная установка удаляется.
 
-**Способ 2 — прямая установка `.xpi`:**
-
-1. Скачайте [`nmo-helper-firefox-5.4.0-unsigned.xpi`](https://github.com/Samyray24/nmo-helper/releases/download/v5.4.0/nmo-helper-firefox-5.4.0-unsigned.xpi)
-2. Перетащите `.xpi` в окно Firefox, или откройте `about:addons` → ⚙ → **«Установить дополнение из файла»**
-3. Подтвердите установку
-
-<details>
-<summary>📹 Показать GIF-инструкцию</summary>
-
-![Установка Firefox](demo/setup_2.gif)
-</details>
-
-> **Почему в Chrome нет магазинной версии?** Расширение использует парсинг сайтов с готовыми ответами — политика Chrome Web Store это запрещает, и расширение быстро удалят. Ручная установка через `chrome://extensions` занимает пару минут и работает надёжно.
+Для обычной постоянной установки требуется подпись Mozilla. [Подготовленный комплект и порядок подписи](docs/MOZILLA_SIGNING.md). Не отключайте ограничения подписи в рабочем браузере ради тестовой сборки.
 
 ---
 

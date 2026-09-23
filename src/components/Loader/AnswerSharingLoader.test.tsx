@@ -176,7 +176,7 @@ describe('AnswerSharingLoader', () => {
 			.toHaveAttribute('src', 'chrome-extension://nmo-helper/icons/new_icon.png');
 		expect(mocks.submitSharedQuestions).not.toHaveBeenCalled();
 		expect(mocks.mergeLocalAnswers).toHaveBeenCalledWith([{
-			topic: 'Кардиология - 2025', question: 'Первый вопрос',
+			topic: 'Кардиология - 2025', question: 'Первый вопрос', source: 'Подтверждено страницей результатов НМО',
 			variants: ['A1', 'A2'], answers: ['A2'],
 		}]);
 	});

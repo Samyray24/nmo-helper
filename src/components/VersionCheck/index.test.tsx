@@ -111,7 +111,7 @@ describe('VersionCheck', () => {
 		mocks.checkVersion.mockRejectedValueOnce(new Error('сеть недоступна'));
 		fireEvent.click(screen.getByRole('button'));
 
-		await waitFor(() => expect(screen.getByRole('button')).toHaveClass('idle'));
+		await waitFor(() => expect(screen.getByRole('button')).toHaveClass('unavailable'));
 		expect(screen.getByRole('button')).toBeEnabled();
 	});
 

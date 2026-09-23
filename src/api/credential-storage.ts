@@ -4,7 +4,11 @@ const memoryCredentials = new Map<string, string>();
  * Reads an AI credential from browser-session storage. Legacy values from
  * local storage are migrated once and removed from persistent storage.
  */
-export async function credentialGet(key: string): Promise<string> {
+export async function credentialGet(key: string, background = false): Promise<string> {
+	if (!background && typeof document !== 'undefined' && chrome.runtime.id) {
+		const response = await bridge({action: 'credential-get', key});
+		return typeof response?.value === 'string' ? response.value : memoryCredentials.get(key) ?? '';
+	}
 	const sessionArea = getSessionArea();
 	if (sessionArea) {
 		const sessionValue = await readArea(sessionArea, key);
@@ -26,8 +30,12 @@ export async function credentialGet(key: string): Promise<string> {
 }
 
 /** Stores credentials for the browser session; Firefox ESR uses extension-only local storage. */
-export async function credentialSet(key: string, value: string): Promise<void> {
+export async function credentialSet(key: string, value: string, background = false): Promise<void> {
 	memoryCredentials.set(key, value);
+	if (!background && typeof document !== 'undefined' && chrome.runtime.id) {
+		await bridge({action: 'credential-set', key, value});
+		return;
+	}
 	const sessionArea = getSessionArea();
 	if (sessionArea) {
 		await writeArea(sessionArea, key, value);
@@ -47,9 +55,16 @@ function readArea(area: chrome.storage.StorageArea | undefined, key: string): Pr
 }
 
 function writeArea(area: chrome.storage.StorageArea | undefined, key: string, value: string): Promise<void> {
-	if (!area) return Promise.resolve();
+	if (!area) return Promise.reject(new Error('Хранилище недоступно'));
+	return new Promise((resolve, reject) => {
+		try { area.set({[key]: value}, () => chrome.runtime.lastError ? reject(new Error('Не удалось сохранить ключ')) : resolve()); } catch (error) { reject(error); }
+	});
+}
+
+function bridge(message: {action: string; key: string; value?: string}): Promise<{value?: string} | undefined> {
 	return new Promise(resolve => {
-		try { area.set({[key]: value}, resolve); } catch { resolve(); }
+		try { chrome.runtime.sendMessage(message, response => { void chrome.runtime.lastError; resolve(response); }); }
+		catch { resolve(undefined); }
 	});
 }
 
