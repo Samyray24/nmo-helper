@@ -27,7 +27,7 @@ for (const [folder, suffix] of [['firefox-store', 'modern'], ['firefox-legacy', 
 }
 const sources = {};
 for (const folder of ['src', 'scripts', 'docs', 'tests']) Object.assign(sources, files(path.join(root, folder), folder + '/'));
-for (const name of ['package.json', 'package-lock.json', 'build.js', 'tsconfig.json', 'LICENSE', 'README.md']) sources[name] = fs.readFileSync(path.join(root, name));
+for (const name of ['package.json', 'package-lock.json', 'build.js', 'tsconfig.json', 'LICENSE', 'AUTHORS.md', 'README.md']) sources[name] = fs.readFileSync(path.join(root, name));
 zip(`mozilla-sources-${version}.zip`, sources);
 fs.copyFileSync(path.join(root, 'docs', 'MOZILLA_SIGNING.md'), path.join(out, 'КАК ПОЛУЧИТЬ ПОДПИСЬ.md'));
 console.log(`[OK] Mozilla submission kit ${version}: ${out}`);

@@ -29,7 +29,7 @@ const Header: React.FC = (): React.JSX.Element => {
 			<div className="nmo-titlebar">
 				<div className="nmo-brand">
 					<span className={cn('nmo-brand-dot', status.status)}/>
-					<span className="nmo-brand-name">NMO Helper</span>
+					<span className="nmo-brand-name" title="Версия Samyray24 · исходный проект lKolabrodl">NMO Helper</span>
 					<VersionCheck onOutdated={setUpdate}/>
 				</div>
 				<div className="nmo-titlebar-ctrl"><StopAutoSolve/><ThemeToggle/>

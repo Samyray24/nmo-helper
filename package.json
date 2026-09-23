@@ -1,6 +1,6 @@
 {
   "name": "nmo-helper",
-  "version": "5.5.0",
+  "version": "5.5.1",
   "description": "Расширение для браузера, которое поможет вам решить тесты (ИОМ'ы) на портале НМО — https://a.edu.rosminzdrav.ru\r </br>\r Прост в установке, работает из коробки.\r </br>\r Ответы берутся из баз поиска ответов, а также с помощью AI.\r </br>",
   "main": "ai.js",
   "scripts": {
@@ -25,7 +25,7 @@
     "url": "git+https://github.com/Samyray24/nmo-helper.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "lKolabrodl",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Samyray24/nmo-helper/issues"
@@ -57,5 +57,11 @@
     "med-pdf-nmo": "^0.2.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
-  }
+  },
+  "contributors": [
+    {
+      "name": "Samyray24",
+      "url": "https://github.com/Samyray24"
+    }
+  ]
 }
