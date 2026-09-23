@@ -40,6 +40,16 @@ body {
 	gap: 12px;
 }
 
+.popup-attribution {
+	padding: 12px 14px 0;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #b8c2d4;
+}
+.popup-attribution strong { color: #e8eaf0; }
+.popup-attribution p { margin-top: 5px; }
+.popup-attribution a { color: #7de1bb; }
+
 .popup-links {
 	display: flex;
 	flex-direction: column;

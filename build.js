@@ -117,6 +117,9 @@ async function build() {
     fs.copyFileSync(path.join(SRC, 'popup.html'), path.join(outDir, 'popup.html'));
     fs.copyFileSync(path.join(SRC, 'popup.css'), path.join(outDir, 'popup.css'));
     fs.copyFileSync(path.join(SRC, 'popup.js'), path.join(outDir, 'popup.js'));
+    for (const name of ['LICENSE', 'AUTHORS.md']) {
+      fs.copyFileSync(path.join(__dirname, name), path.join(outDir, name));
+    }
 
     // Copy pdfjs worker for med-pdf-nmo browser runtime.
     fs.copyFileSync(

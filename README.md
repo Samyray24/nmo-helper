@@ -1,4 +1,8 @@
-# NMO Helper v5.5.0
+# NMO Helper v5.5.1
+
+**Версия Samyray24. Развитие и сопровождение — [Samyray24](https://github.com/Samyray24).**
+
+Основано на [NMO Helper автора lKolabrodl](https://github.com/lKolabrodl/nmo-helper). Лицензия MIT и авторство исходного проекта сохранены. [Авторы и сопровождение](AUTHORS.md).
 
 > Умный помощник в прохождении тестов НМО на портале [edu.rosminzdrav.ru](https://a.edu.rosminzdrav.ru) — бесплатное расширение для браузера с открытым исходным кодом.
 
@@ -14,6 +18,10 @@
 🐞 **Баги и предложения:** [GitHub Issues](https://github.com/Samyray24/nmo-helper/issues)
 
 ---
+
+## Изменения 5.5.1
+
+Версия подписана именем Samyray24 в окне расширения, описании проекта и браузерных метаданных. Все сборки содержат AUTHORS.md и исходную лицензию MIT.
 
 ## Изменения 5.5.0
 
@@ -64,12 +72,12 @@ Safari также включены; готового приложения Safari
 ### Linux — текущая изменённая сборка
 
 Инструкция для Chrome/Chromium и Firefox: [LINUX.md](LINUX.md).
-Команда `npm run package:linux` собирает архив `releases/nmo-helper-linux-5.5.0.tar.gz`
+Команда `npm run package:linux` собирает архив `releases/nmo-helper-linux-5.5.1.tar.gz`
 с исправлениями и дополнительными базами. Для установки готового архива Node.js не нужен.
 
 ### Chrome / Yandex / Edge / Brave / Opera
 
-1. Скачайте [`nmo-helper-chromium-5.5.0.zip`](https://github.com/Samyray24/nmo-helper/releases/download/v5.5.0/nmo-helper-chromium-5.5.0.zip)
+1. Скачайте [`nmo-helper-chromium-5.5.1.zip`](https://github.com/Samyray24/nmo-helper/releases/download/v5.5.1/nmo-helper-chromium-5.5.1.zip)
 2. Разархивируйте в удобную папку
 3. Откройте `chrome://extensions/` в адресной строке
 4. Включите **«Режим разработчика»** (правый верхний угол)
