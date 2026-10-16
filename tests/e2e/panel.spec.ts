@@ -50,7 +50,7 @@ test('восстанавливает панель внутри экрана и �
 });
 
 test('дополнительные настройки доступны в низком окне', async ({page}) => {
-	await page.setViewportSize({width: 600, height: 400});
+	await page.setViewportSize({width: 600, height: 320});
 	await page.setContent(quizMarkup());
 	await installChromeShim(page, {mode: 'base'});
 	await page.addStyleTag({path: path.join(root, 'dist/chrome/content.css')});

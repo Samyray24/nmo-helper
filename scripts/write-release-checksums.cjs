@@ -8,6 +8,7 @@ const version = require('../package.json').version;
 const output = path.join(releases, `SHA256SUMS-${version}.txt`);
 
 fs.mkdirSync(releases, {recursive: true});
+fs.copyFileSync(path.join(root, 'INSTALL.md'), path.join(releases, 'INSTALL.md'));
 const lines = fs.readdirSync(releases, {withFileTypes: true})
 	.filter(entry => entry.isFile() && !entry.name.startsWith('SHA256SUMS-'))
 	.sort((a, b) => a.name.localeCompare(b.name, 'en'))

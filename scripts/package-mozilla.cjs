@@ -4,7 +4,9 @@ const {zipSync} = require('fflate');
 const root = path.resolve(__dirname, '..');
 const version = require('../package.json').version;
 const out = path.join(root, 'ГОТОВЫЕ ВЕРСИИ', '05 - Firefox - комплект для подписи Mozilla');
+const releases = path.join(root, 'releases');
 fs.mkdirSync(out, {recursive: true});
+fs.mkdirSync(releases, {recursive: true});
 function files(directory, prefix = '') {
   const result = {};
   for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
@@ -16,7 +18,9 @@ function files(directory, prefix = '') {
   return result;
 }
 function zip(name, entries) {
-  fs.writeFileSync(path.join(out, name), zipSync(entries, {level: 6, mtime: new Date('2020-01-01T00:00:00Z')}));
+  const archive = zipSync(entries, {level: 6, mtime: new Date('2020-01-01T00:00:00Z')});
+  fs.writeFileSync(path.join(out, name), archive);
+  fs.writeFileSync(path.join(releases, name), archive);
 }
 for (const [folder, suffix] of [['firefox-store', 'modern'], ['firefox-legacy', 'esr']]) {
   const entries = files(path.join(root, 'dist', folder));
