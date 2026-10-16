@@ -3,6 +3,25 @@ import { findAnswers, type QaCaseModel } from './cases';
 import {extractFirstCases, extractSecondCases} from './extractors';
 
 describe('findAnswers — источник совпадения', () => {
+	it('предпочитает точный ответ более длинному варианту с тем же началом', () => {
+		const answer = 'проведение лабораторного исследования';
+		const variants = [`${answer} и инструментального обследования`, answer];
+		const model: QaCaseModel[] = [{question: 'Выберите метод', variants, answers: [answer], idx: 0}];
+		expect(findAnswers(model, 'Выберите метод', variants)?.answers).toEqual([answer]);
+	});
+	it('не выдаёт неполный набор правильных ответов как готовое решение', () => {
+		const model: QaCaseModel[] = [{question: 'Выберите методы', variants: ['альфа', 'бета', 'гамма'], answers: ['альфа', 'гамма'], idx: 0}];
+		expect(findAnswers(model, 'Выберите методы', ['альфа', 'бета'])?.answers).toEqual([]);
+	});
+	it('не переносит ответы на вопрос с противоположным отрицанием', () => {
+		const model: QaCaseModel[] = [{question: 'Какой препарат рекомендуется применять при данном заболевании?', variants: ['альфа', 'бета'], answers: ['альфа'], idx: 0}];
+		expect(findAnswers(model, 'Какой препарат НЕ рекомендуется применять при данном заболевании?', ['альфа', 'бета'])).toBeNull();
+	});
+	it('не подменяет отсутствующий ответ вариантом с отрицанием', () => {
+		const answer = 'рекомендуется проводить обследование';
+		const model: QaCaseModel[] = [{question: 'Выберите ответ', variants: [answer], answers: [answer], idx: 0}];
+		expect(findAnswers(model, 'Выберите ответ', [`не ${answer}`])?.answers).toEqual([]);
+	});
 	it('возвращает вопрос источника, который был выбран', () => {
 		const model: QaCaseModel[] = [{question: 'Вопрос из базы', variants: ['a', 'b'], answers: ['b'], idx: 0}];
 		expect(findAnswers(model, 'Вопрос из базы', ['a', 'b'])?.matchedQuestion).toBe('Вопрос из базы');

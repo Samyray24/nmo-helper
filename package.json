@@ -1,6 +1,6 @@
 {
   "name": "nmo-helper",
-  "version": "5.5.1",
+  "version": "5.5.2",
   "description": "Расширение для браузера, которое поможет вам решить тесты (ИОМ'ы) на портале НМО — https://a.edu.rosminzdrav.ru\r </br>\r Прост в установке, работает из коробки.\r </br>\r Ответы берутся из баз поиска ответов, а также с помощью AI.\r </br>",
   "main": "ai.js",
   "scripts": {
@@ -9,8 +9,8 @@
     "package:yandex": "node scripts/package-yandex.cjs",
     "package:all": "node scripts/package-all.cjs",
     "package:ready": "node scripts/package-ready.cjs",
-    "package:release": "node scripts/package-all.cjs && node scripts/package-linux.cjs --skip-build && node scripts/package-ready.cjs",
-    "package:github": "node scripts/package-all.cjs && node scripts/package-linux.cjs --skip-build && node scripts/write-release-checksums.cjs",
+    "package:release": "node scripts/package-all.cjs && node scripts/package-linux.cjs --skip-build && node scripts/package-mozilla.cjs && node scripts/package-ready.cjs && node scripts/write-release-checksums.cjs",
+    "package:github": "node scripts/package-all.cjs && node scripts/package-linux.cjs --skip-build && node scripts/package-mozilla.cjs && node scripts/write-release-checksums.cjs",
     "validate:release": "node scripts/validate-release.cjs",
     "dev": "node build.js --watch",
     "test": "vitest run",

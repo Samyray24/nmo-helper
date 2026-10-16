@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import cn from 'classnames';
 import './styles.scss';
 import {useSettings} from '../../contexts/SettingsContext';
@@ -13,9 +13,28 @@ interface ISettingsProps {
 const Settings: React.FC<ISettingsProps> = ({onOpen}) => {
 	const settingsRef = useRef<HTMLDivElement>(null);
 	const [open, setOpen] = useState(false);
+	const [menuMaxHeight, setMenuMaxHeight] = useState<number>();
 	const {setOpen: setDiagnosticsOpen} = useDiagnosticsDialog();
 	const {enabled: testDataSharingEnabled, setEnabled: setTestDataSharingEnabled} =
 		useSettings().testDataSharing;
+
+	useLayoutEffect(() => {
+		const anchor = settingsRef.current;
+		if (!open || !anchor) return;
+		const panel = anchor.closest('#nmo-panel');
+		const updateHeight = (): void => {
+			const bottom = Math.min(window.innerHeight, panel?.getBoundingClientRect().bottom ?? window.innerHeight);
+			setMenuMaxHeight(Math.max(0, bottom - anchor.getBoundingClientRect().bottom - 10));
+		};
+		updateHeight();
+		window.addEventListener('resize', updateHeight);
+		const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateHeight);
+		if (panel) observer?.observe(panel);
+		return () => {
+			window.removeEventListener('resize', updateHeight);
+			observer?.disconnect();
+		};
+	}, [open]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -57,7 +76,7 @@ const Settings: React.FC<ISettingsProps> = ({onOpen}) => {
 			</button>
 
 			{open && (
-				<div className="nmo-settings-menu nmo-fade-up" role="menu">
+				<div className="nmo-settings-menu nmo-fade-up" role="menu" style={{maxHeight: menuMaxHeight}}>
 					<AutoSolveSettings/>
 					<button type="button" className="nmo-settings-diagnostics" onClick={() => { setOpen(false); setDiagnosticsOpen(true); }}>Проверить расширение</button>
 					<div className="nmo-settings-divider"/>

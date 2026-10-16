@@ -21,7 +21,7 @@ npm run test:e2e
 `src/manifest.*.json`. Для обновления пакета используйте:
 
 ```bash
-npm version 5.4.0 --no-git-tag-version
+npm version 5.5.2 --no-git-tag-version
 ```
 
 ## Локальные готовые версии
@@ -39,9 +39,9 @@ CRX хранится вне репозитория в `~/.codex/nmo-helper-signi
 После слияния изменений в `main` создайте тег с той же версией:
 
 ```bash
-git tag v5.4.0
+git tag v5.5.2
 git push origin main
-git push origin v5.4.0
+git push origin v5.5.2
 ```
 
 Workflow `.github/workflows/release.yml` сам запускает тесты, собирает пакеты,
