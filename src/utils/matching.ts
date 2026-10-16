@@ -68,6 +68,15 @@ function normForMatch(s: string): string {
 	return stripQuotes(normalizeDashes(s));
 }
 
+const NEGATION_WORDS = new Set(['не', 'без', 'нет'].map(normForMatch));
+
+/** Отрицания нельзя терять при нечётком сравнении похожих формулировок. */
+function negations(text: string): string {
+	return (text.match(/[\p{L}\p{N}]+/gu) ?? [])
+		.filter(word => NEGATION_WORDS.has(word))
+		.sort().join('|');
+}
+
 /**
  * Сравнивает два текста ВОПРОСА и возвращает score 0..1, где
  * `0` — не похожи достаточно, `1` — полное совпадение после нормализации.
@@ -90,6 +99,7 @@ export function matchQuestion(stored: string, input: string): number {
 	const a = normForMatch(stored);
 	const b = normForMatch(input);
 	if (a === b) return 1;
+	if (negations(a) !== negations(b)) return 0;
 
 	const minLen = Math.min(a.length, b.length);
 	if (minLen >= MIN_INCLUDES_LEN && (a.includes(b) || b.includes(a))) {
@@ -123,6 +133,7 @@ export function variantScore(stored: string, input: string): number {
 	const a = normForMatch(stored);
 	const b = normForMatch(input);
 	if (a === b) return 1;
+	if (negations(a) !== negations(b)) return 0;
 	if (Math.min(a.length, b.length) >= MIN_INCLUDES_LEN && (a.includes(b) || b.includes(a))) return 1;
 	return similarity(a, b);
 }

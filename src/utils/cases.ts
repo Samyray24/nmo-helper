@@ -1,4 +1,7 @@
 import { matchQuestion, variantScore } from './matching';
+import {normalizeDashes, stripQuotes} from './text';
+
+const exactKey = (text: string): string => stripQuotes(normalizeDashes(text));
 
 export interface QaCaseModel {
 	readonly question: string;
@@ -31,7 +34,7 @@ export interface IParse2Result {
  * Ищет case в модели по (question, variants).
  *
  * 1. Фильтрует кандидатов по вопросу (`matchQuestion` — exact / includes≥10 / similarity).
- * 2. Для каждого считает overlap через top-1 assignment:
+ * 2. Для каждого резервирует точные пары, затем считает overlap через top-1 assignment:
  *    каждый source-вариант выбирает ЛУЧШИЙ ещё не занятый входной вариант
  *    по `variantScore`. Один входной вариант не может быть «подхвачен» дважды.
  * 3. Сортирует: `overlap desc → qScore desc → idx asc` — стабильный тай-брейкер.
@@ -46,7 +49,7 @@ export interface IParse2Result {
  *
  * @returns
  *  - `null` — вопрос не нашёлся в модели
- *  - `{ answers: [], score }` — вопрос нашёлся, но source-ответы не сопоставились с входными variants
+ *  - `{ answers: [], score }` — вопрос нашёлся, но не все source-ответы сопоставились с входными variants
  *  - `{ answers: [...], score }` — нормальный матч
  */
 export function findAnswers(model: QaCaseModel[], question: string, variants: string[]): IParse2Result | null {
@@ -72,8 +75,10 @@ export function findAnswers(model: QaCaseModel[], question: string, variants: st
 
 	// Top-1 assignment source-answers → input variants.
 	// Возвращаем подмножество ВХОДНЫХ variants в порядке их появления.
-	const assignedIdx = assignTopOne(winner.c.answers, variants).sort((a, b) => a - b);
-	const answers = assignedIdx.map(i => variants[i]);
+	const sourceAnswers = [...new Map(winner.c.answers.map(answer => [exactKey(answer), answer])).values()];
+	const assignedIdx = assignTopOne(sourceAnswers, variants).sort((a, b) => a - b);
+	// Частичный набор нельзя применять: для нескольких ответов нужны все совпадения.
+	const answers = assignedIdx.length === sourceAnswers.length ? assignedIdx.map(i => variants[i]) : [];
 
 	return {
 		answers,
@@ -83,17 +88,27 @@ export function findAnswers(model: QaCaseModel[], question: string, variants: st
 }
 
 /**
- * Жадное назначение: каждому элементу из `sources` ищет индекс лучшего
+ * После резервирования точных пар каждому оставшемуся элементу из `sources` ищет индекс лучшего
  * ещё не занятого элемента в `targets` по {@link variantScore}. Если лучший
  * score ниже {@link MIN_VARIANT_SCORE} — source-элемент пропускается (пары нет).
  *
- * @returns Массив индексов в `targets`, каждый уникален. Порядок соответствует
- *          порядку обхода `sources`.
+ * @returns Массив уникальных индексов в `targets`: сначала точные, затем нечёткие совпадения.
  */
 function assignTopOne(sources: readonly string[], targets: readonly string[]): number[] {
 	const used = new Set<number>();
 	const assigned: number[] = [];
+	const unmatched: string[] = [];
+	// Сначала резервируем точные пары во всём наборе, чтобы подстрока или
+	// опечатка не заняла вариант, который точно соответствует другому ответу.
 	for (const src of sources) {
+		const index = targets.findIndex((target, i) => !used.has(i) && exactKey(src) === exactKey(target));
+		if (index < 0) unmatched.push(src);
+		else {
+			assigned.push(index);
+			used.add(index);
+		}
+	}
+	for (const src of unmatched) {
 		let bestIdx = -1;
 		let bestScore = 0;
 		targets.forEach((tgt, i) => {

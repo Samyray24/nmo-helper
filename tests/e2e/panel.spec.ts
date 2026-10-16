@@ -28,11 +28,50 @@ for (const viewport of [{width: 1366, height: 768}, {width: 1024, height: 768}])
 	});
 }
 
-async function installChromeShim(page: import('@playwright/test').Page): Promise<void> {
-	await page.evaluate(() => {
+test('восстанавливает панель внутри экрана и удерживает её при уменьшении окна', async ({page}) => {
+	await page.setViewportSize({width: 1366, height: 768});
+	await page.setContent(quizMarkup());
+	await installChromeShim(page, {panelRight: 1800, panelTop: 1000, mode: 'base'});
+	await page.addStyleTag({path: path.join(root, 'dist/chrome/content.css')});
+	await page.addScriptTag({path: path.join(root, 'dist/chrome/content.js')});
+	const panel = page.locator('#nmo-panel');
+	await expect(panel.getByText('NMO Helper')).toBeAttached();
+	const fitsViewport = () => panel.evaluate(element => {
+		const rect = element.getBoundingClientRect();
+		return rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight;
+	});
+	await expect.poll(fitsViewport).toBe(true);
+	await page.setViewportSize({width: 600, height: 400});
+	await expect.poll(fitsViewport).toBe(true);
+	await panel.getByRole('button', {name: 'Свернуть', exact: true}).click();
+	await panel.getByRole('button', {name: 'Развернуть', exact: true}).click();
+	await expect.poll(fitsViewport).toBe(true);
+	await page.screenshot({path: 'output/playwright/panel-small-viewport.png'});
+});
+
+test('дополнительные настройки доступны в низком окне', async ({page}) => {
+	await page.setViewportSize({width: 600, height: 400});
+	await page.setContent(quizMarkup());
+	await installChromeShim(page, {mode: 'base'});
+	await page.addStyleTag({path: path.join(root, 'dist/chrome/content.css')});
+	await page.addScriptTag({path: path.join(root, 'dist/chrome/content.js')});
+	const panel = page.locator('#nmo-panel');
+	await panel.getByRole('button', {name: 'Настройки'}).click();
+	await panel.getByText('Дополнительные настройки', {exact: true}).click();
+	await expect.poll(() => panel.evaluate(element => {
+		const menu = element.querySelector('.nmo-settings-menu')!;
+		return menu.getBoundingClientRect().bottom <= element.getBoundingClientRect().bottom;
+	})).toBe(true);
+	await panel.getByRole('button', {name: 'Проверить расширение'}).click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+async function installChromeShim(page: import('@playwright/test').Page, saved: Record<string, unknown> = {}): Promise<void> {
+	await page.evaluate(saved => {
 		const local: Record<string, unknown> = {
 			panelCollapsed: false,
 			aiFallbackEnabled: false,
+			...saved,
 		};
 		const session: Record<string, unknown> = {};
 		const area = (store: Record<string, unknown>) => ({
@@ -51,7 +90,7 @@ async function installChromeShim(page: import('@playwright/test').Page): Promise
 			},
 			permissions: {contains: (_value: unknown, callback: (granted: boolean) => void) => callback(true), request: (_value: unknown, callback: (granted: boolean) => void) => callback(true)},
 		}, configurable: true});
-	});
+	}, saved);
 }
 
 function quizMarkup(): string {

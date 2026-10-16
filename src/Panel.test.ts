@@ -9,10 +9,10 @@ describe('panel position', () => {
 		});
 	});
 
-	it('оставляет часть панели доступной у остальных границ viewport', () => {
+	it('удерживает всю панель внутри viewport', () => {
 		expect(constrainPanelPosition(-500, 900, 360, 500, 1280, 720)).toEqual({
-			left: -352,
-			top: 712,
+			left: 0,
+			top: 220,
 		});
 	});
 });
