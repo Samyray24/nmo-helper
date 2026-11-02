@@ -112,6 +112,25 @@ replacePackage(all, `nmo-helper-linux-${version}.tar.gz`, `NMO Helper ${version}
 
 replaceVersionInInstructions(readyRoot);
 
+for (const entry of fs.readdirSync(readyRoot, {withFileTypes: true})) {
+  if (!entry.isFile()) continue;
+  const match = entry.name.match(/^ЧТО НОВОГО - ([0-9]+[.][0-9]+[.][0-9]+)\.md$/);
+  if (match && match[1] !== version) {
+    const file = path.join(readyRoot, entry.name);
+    assertInside(readyRoot, file);
+    fs.unlinkSync(file);
+  }
+}
+
+const releaseNotesSource = path.join(root, 'docs', `RELEASE_${version}.md`);
+if (fs.existsSync(releaseNotesSource)) {
+  fs.copyFileSync(releaseNotesSource, path.join(readyRoot, `ЧТО НОВОГО - ${version}.md`));
+}
+const installGuideSource = path.join(root, 'INSTALL.md');
+if (fs.existsSync(installGuideSource)) {
+  fs.copyFileSync(installGuideSource, path.join(readyRoot, 'ПОДРОБНАЯ ИНСТРУКЦИЯ.md'));
+}
+
 const hashFile = path.join(all, 'SHA256 - проверка файлов.txt');
 const hashes = fs.readdirSync(all, {withFileTypes: true})
   .filter(entry => entry.isFile() && /\.(?:zip|tar\.gz)$/.test(entry.name))
@@ -122,7 +141,7 @@ fs.writeFileSync(hashFile, hashes.join('\n') + '\n');
 for (const entry of fs.readdirSync(releases, {withFileTypes: true})) {
   if (!entry.isFile()) continue;
   const versionMatch = entry.name.match(/([0-9]+[.][0-9]+[.][0-9]+)/);
-  if (versionMatch && versionMatch[1] !== version && /^(?:nmo-helper-|SHA256SUMS-)/.test(entry.name)) {
+  if (versionMatch && versionMatch[1] !== version && /^(?:nmo-helper-|mozilla-|SHA256SUMS-)/.test(entry.name)) {
     const file = path.join(releases, entry.name);
     assertInside(releases, file);
     fs.unlinkSync(file);

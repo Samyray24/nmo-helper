@@ -12,6 +12,7 @@ import {
 	type IModalWindowSettings,
 	type IModalWindowViewport,
 } from './layout';
+import {useActiveTheme} from '../../utils/theme';
 import './styles.scss';
 
 export type {IModalWindowLayout, IModalWindowSettings} from './layout';
@@ -59,7 +60,7 @@ const ModalWindow: React.FC<IModalWindowProps> = ({
 	className,
 	portalTarget,
 }) => {
-
+	const theme = useActiveTheme();
 	const [layout, setLayout] = useState<IModalWindowLayout>(() => loadModalWindowLayout(storageKey, settings));
 
 	const [interactionKind, setInteractionKind] = useState<IModalWindowInteraction['kind'] | null>(null);
@@ -201,6 +202,8 @@ const ModalWindow: React.FC<IModalWindowProps> = ({
 
 	return createPortal(
 		<div
+			data-nmo-portal=""
+			data-nmo-theme={theme}
 			className="nmo-modal-window-backdrop"
 			onMouseDown={event => {
 				if (event.target === event.currentTarget) onClose();

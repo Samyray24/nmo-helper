@@ -1,5 +1,5 @@
 import { matchQuestion, variantScore } from './matching';
-import {normalizeDashes, stripQuotes} from './text';
+import { normalizeDashes, stripQuotes } from './text';
 
 const exactKey = (text: string): string => stripQuotes(normalizeDashes(text));
 
@@ -30,10 +30,24 @@ export interface IParse2Result {
 	readonly matchedQuestion: string;
 }
 
+interface PreparedCase extends QaCaseModel {
+	readonly normalizedQuestion: string;
+	readonly normalizedAnswers: string[];
+	readonly sortedVariants: string[];
+}
+
+interface AnswerMatch {
+	readonly indexes: number[];
+	readonly score: number;
+	readonly matchedQuestion: string;
+}
+
 /**
  * Ищет case в модели по (question, variants).
  *
- * 1. Фильтрует кандидатов по вопросу (`matchQuestion` — exact / includes≥10 / similarity).
+ * 1. Ищет точный вопрос и набор вариантов после нормализации оформления.
+ *    Если такого набора нет, сопоставляет варианты точных вопросов; если нет
+ *    и точного вопроса — использует `matchQuestion` (includes≥10 / similarity).
  * 2. Для каждого резервирует точные пары, затем считает overlap через top-1 assignment:
  *    каждый source-вариант выбирает ЛУЧШИЙ ещё не занятый входной вариант
  *    по `variantScore`. Один входной вариант не может быть «подхвачен» дважды.
@@ -41,19 +55,73 @@ export interface IParse2Result {
  * 4. Тем же top-1 assignment сопоставляет source-answers победителя со ВХОДНЫМИ
  *    variants и возвращает подмножество ВХОДНЫХ как `answers`.
  *
- * Ключевая идея: «лучший» вместо «любой выше порога» — настоящее совпадение
- * всегда даёт score 1.0 и выигрывает у похожих-но-разных меток
- * (напр., «катепсина К» выигрывает у «катепсина А» со score 0.9, даже если
- * обе прошли бы порог). Порог {@link MIN_VARIANT_SCORE} — только floor против
- * утиль-шума, не инструмент отбора.
- *
  * @returns
  *  - `null` — вопрос не нашёлся в модели
- *  - `{ answers: [], score }` — вопрос нашёлся, но не все source-ответы сопоставились с входными variants
- *  - `{ answers: [...], score }` — нормальный матч
+ *  - `{ answers: [], score, matchedQuestion }` — вопрос нашёлся, но не все source-ответы сопоставились с входными variants
+ *  - `{ answers: [...], score, matchedQuestion }` — нормальный матч
  */
 export function findAnswers(model: QaCaseModel[], question: string, variants: string[]): IParse2Result | null {
-	const candidates = model
+	const normalizedQuestion = exactKey(question);
+	const normalizedVariants = variants.map(exactKey);
+	const sortedVariants = [...normalizedVariants].sort();
+
+	const preparedModel: PreparedCase[] = model.map(c => ({
+		...c,
+		normalizedQuestion: exactKey(c.question),
+		normalizedAnswers: c.answers.map(exactKey),
+		sortedVariants: c.variants.map(exactKey).sort(),
+	}));
+
+	const found =
+		findExactAnswers(preparedModel, normalizedQuestion, normalizedVariants, sortedVariants)
+		?? findFuzzyAnswers(preparedModel, normalizedQuestion, question, variants);
+
+	if (!found) return null;
+
+	return {
+		answers: found.indexes.map(index => variants[index]),
+		score: found.score,
+		matchedQuestion: found.matchedQuestion,
+	};
+}
+
+/** Точный поиск по подготовленным текстам и отсортированным копиям вариантов. */
+function findExactAnswers(
+	model: readonly PreparedCase[],
+	normalizedQuestion: string,
+	normalizedVariants: readonly string[],
+	sortedVariants: readonly string[],
+): AnswerMatch | null {
+	const exact = model.find(c =>
+		c.normalizedQuestion === normalizedQuestion
+		&& c.sortedVariants.length === sortedVariants.length
+		&& c.sortedVariants.every((variant, index) => variant === sortedVariants[index]),
+	);
+
+	if (!exact) return null;
+
+	const uniqueAnswers = new Set(exact.normalizedAnswers);
+	const indexes = normalizedVariants.flatMap((variant, index) => uniqueAnswers.has(variant) ? [index] : []);
+	if (indexes.length < uniqueAnswers.size) return null;
+
+	return {
+		indexes,
+		score: 1,
+		matchedQuestion: exact.question,
+	};
+}
+
+/** Нечёткий поиск с приоритетом точного текста вопроса. */
+function findFuzzyAnswers(
+	model: readonly PreparedCase[],
+	normalizedQuestion: string,
+	question: string,
+	variants: readonly string[],
+): AnswerMatch | null {
+	const exactQuestions = model.filter(c => c.normalizedQuestion === normalizedQuestion);
+	const pool = exactQuestions.length ? exactQuestions : model;
+
+	const candidates = pool
 		.map(c => ({ c, qScore: matchQuestion(c.question, question) }))
 		.filter(x => x.qScore > 0);
 
@@ -78,10 +146,10 @@ export function findAnswers(model: QaCaseModel[], question: string, variants: st
 	const sourceAnswers = [...new Map(winner.c.answers.map(answer => [exactKey(answer), answer])).values()];
 	const assignedIdx = assignTopOne(sourceAnswers, variants).sort((a, b) => a - b);
 	// Частичный набор нельзя применять: для нескольких ответов нужны все совпадения.
-	const answers = assignedIdx.length === sourceAnswers.length ? assignedIdx.map(i => variants[i]) : [];
+	const indexes = assignedIdx.length === sourceAnswers.length ? assignedIdx : [];
 
 	return {
-		answers,
+		indexes,
 		score: winner.qScore * confidence,
 		matchedQuestion: winner.c.question,
 	};

@@ -7,7 +7,7 @@
   gap: 6px;
   padding: 6px 10px;
   background: $warning-soft;
-  border: 1px solid rgba(245, 193, 75, 0.28);
+  border: 1px solid $warning-border;
   border-radius: $r-sm;
   color: $warning-text;
   font-family: inherit;
@@ -18,7 +18,7 @@
 
   &:hover:not(:disabled) {
     background: rgba(245, 193, 75, 0.18);
-    border-color: $warning-border;
+    border-color: $warning;
   }
 
   &.disabled,
@@ -32,11 +32,15 @@
 .nmo-bug-form {
   padding: 12px 14px;
   background: $warning-soft;
-  border-top: 1px solid rgba(245, 193, 75, 0.25);
-  border-bottom: 1px solid rgba(245, 193, 75, 0.25);
+  border-bottom: 1px solid $warning-border;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
+  max-height: min(420px, calc(100vh - 120px));
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: $border-strong transparent;
 }
 
 .nmo-bug-form-head {
@@ -61,12 +65,14 @@
 
   &:hover {
     background: rgba(245, 193, 75, 0.18);
-    color: $warning;
+    color: $text;
   }
 }
 
 .nmo-bug-textarea {
   width: 100%;
+  min-height: 58px;
+  flex-shrink: 0;
   background: $bg-input;
   border: 1px solid $border;
   color: $text;
@@ -86,8 +92,8 @@
 
 .nmo-bug-preview {
   padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(245, 193, 75, 0.18);
+  background: $bg-input;
+  border: 1px solid $warning-border;
   border-radius: 7px;
   font-size: 10.5px;
   color: $warning-text;
@@ -100,16 +106,17 @@
   text-transform: uppercase;
   font-size: 9.5px;
   margin-bottom: 4px;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .nmo-bug-preview-data {
   font-family: $font-mono;
   font-size: 10.5px;
-  line-height: 1.7;
+  line-height: 1.65;
+  color: $text-2;
 
   span {
-    color: #fff;
+    color: $text;
     word-break: break-word;
   }
 
@@ -131,7 +138,7 @@
 }
 
 .nmo-bug-rate-icon {
-  color: $danger;
+  color: $danger-ink;
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -148,7 +155,7 @@
 .nmo-bug-rate-sub {
   font-size: 9.5px;
   color: $danger-text;
-  opacity: 0.7;
+  opacity: 0.78;
   margin-top: 4px;
   font-family: $font-mono;
 }
@@ -159,6 +166,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .nmo-bug-btn-cancel {
@@ -167,12 +175,13 @@
   color: $warning-text;
   font-family: inherit;
   font-size: $fs-md;
+  font-weight: 500;
   cursor: pointer;
   padding: 6px 10px;
   border-radius: $r-sm;
   transition: background .15s;
 
-  &:hover:not(:disabled) { background: rgba(245, 193, 75, 0.12); }
+  &:hover:not(:disabled) { background: rgba(245, 193, 75, 0.14); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
@@ -188,10 +197,10 @@
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
+  flex-shrink: 0;
 
   &.success {
     background: $success-soft;
-    border-top: 1px solid $success-border;
     border-bottom: 1px solid $success-border;
   }
 }
@@ -201,7 +210,7 @@
   height: 28px;
   border-radius: 8px;
   background: rgba(74, 222, 155, 0.18);
-  color: $success;
+  color: $success-ink;
   display: grid;
   place-items: center;
   flex-shrink: 0;

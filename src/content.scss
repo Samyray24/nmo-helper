@@ -13,8 +13,10 @@
   box-shadow: $shadow-pop;
   font-family: $font-ui;
   font-size: $fs-base;
+  line-height: 1.4;
   letter-spacing: -0.005em;
   color: $text;
+  color-scheme: dark;
   overflow: hidden;
 
   -webkit-font-smoothing: antialiased;
@@ -27,34 +29,81 @@
   }
 }
 
-#nmo-panel, #nmo-panel * { box-sizing: border-box; }
+[data-nmo-portal] {
+  color-scheme: dark;
+  font-family: $font-ui;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01', 'cv11';
+}
 
 #nmo-panel,
-#nmo-panel * {
+#nmo-panel *,
+[data-nmo-portal],
+[data-nmo-portal] * {
+  box-sizing: border-box;
+}
+
+#nmo-panel,
+#nmo-panel *,
+[data-nmo-portal],
+[data-nmo-portal] * {
   font-family: $font-ui;
 }
 
 #nmo-panel input,
 #nmo-panel textarea,
-#nmo-panel button {
+#nmo-panel select,
+#nmo-panel button,
+[data-nmo-portal] input,
+[data-nmo-portal] textarea,
+[data-nmo-portal] select,
+[data-nmo-portal] button {
   font-family: inherit;
   letter-spacing: inherit;
 }
 
-// ─── Body ────────────────────────────────────────
+// Защита от глобальных стилей портала НМО (Angular Material / Bootstrap)
+#nmo-panel p,
+#nmo-panel h2,
+#nmo-panel h3,
+#nmo-panel fieldset,
+#nmo-panel legend {
+  margin: 0;
+}
+
+// ─── Shell & Body (единый flex-скролл без двойных скроллбаров) ───
+.nmo-fullpanel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+
+  &.hidden { display: none; }
+}
+
+#nmo-panel[data-settings-open="true"]:not(.collapsed) .nmo-fullpanel {
+  min-height: min(420px, calc(100vh - 32px));
+}
+
 .nmo-body {
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 86px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: $border-strong transparent;
-}
 
-// FullPanel всегда монтирован (чтобы loaders продолжали работать),
-// при свёртывании просто скрываем его, а CollapsedPill рисуем сверху.
-.nmo-fullpanel.hidden { display: none; }
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: $border-strong;
+    border-radius: 3px;
+  }
+}
 
 // ─── Section (container for one tab body) ────────
 .nmo-section {
@@ -75,6 +124,7 @@
   font-family: inherit;
   font-size: $fs-base;
   font-weight: 600;
+  line-height: 1.25;
   letter-spacing: -0.005em;
   border-radius: $r-md;
   border: 1px solid transparent;
@@ -172,8 +222,8 @@
 
 // иконка-кнопка (квадратная, в title-bar)
 .nmo-icon-btn {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
   border-radius: $r-sm;
@@ -199,6 +249,7 @@
   color: $text;
   font-family: inherit;
   font-size: $fs-base;
+  line-height: 1.35;
   padding: 10px 12px;
   border-radius: $r-md;
   outline: none;
@@ -209,7 +260,7 @@
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 
   &.mono {
-    font-family: $font-mono;
+    font-family: $font-mono !important;
     font-size: 11.5px;
   }
 }
@@ -267,21 +318,24 @@ textarea.nmo-input {
     font-family: inherit;
     font-size: $fs-md;
     font-weight: 500;
-    padding: 7px 8px;
+    padding: 7px 6px;
     border-radius: 7px;
     cursor: pointer;
-    transition: background .15s, color .15s;
+    transition: background .15s, color .15s, box-shadow .15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
+    min-width: 0;
+    white-space: nowrap;
 
     &:hover:not(.active) { color: $text-2; }
 
     &.active {
       background: $bg-chip;
       color: $text;
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
     }
   }
 
@@ -335,7 +389,7 @@ textarea.nmo-input {
 
   .nmo-banner-title { color: $text; }
   .nmo-banner-sub { color: $success-text; }
-  .nmo-banner-icon { background: rgba(74, 222, 155, 0.18); color: $success; }
+  .nmo-banner-icon { background: rgba(74, 222, 155, 0.18); color: $success-ink; }
 }
 
 .nmo-banner-warning {
@@ -344,7 +398,7 @@ textarea.nmo-input {
 
   .nmo-banner-title { color: $text; }
   .nmo-banner-sub { color: $warning-text; }
-  .nmo-banner-icon { background: rgba(245, 193, 75, 0.18); color: $warning; }
+  .nmo-banner-icon { background: rgba(245, 193, 75, 0.18); color: $warning-ink; }
 }
 
 .nmo-banner-danger {
@@ -353,7 +407,7 @@ textarea.nmo-input {
 
   .nmo-banner-title { color: $text; }
   .nmo-banner-sub { color: $danger-text; }
-  .nmo-banner-icon { background: rgba(255, 122, 122, 0.18); color: $danger; }
+  .nmo-banner-icon { background: rgba(255, 122, 122, 0.18); color: $danger-ink; }
 }
 
 .nmo-banner-info {
@@ -362,11 +416,12 @@ textarea.nmo-input {
 
   .nmo-banner-title { color: $text; }
   .nmo-banner-sub { color: $info-text; }
-  .nmo-banner-icon { background: rgba(122, 169, 255, 0.18); color: $info; }
+  .nmo-banner-icon { background: rgba(122, 169, 255, 0.18); color: $info-ink; }
 }
 
 // ─── Tier badge (LOW / MED / HIGH / ULTRA) ──────
 .nmo-tier {
+  font-family: $font-mono !important;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -389,45 +444,64 @@ textarea.nmo-input {
 
   &:empty { display: none; }
 
-  &.ok      { color: $accent; }
-  &.err     { color: $danger; }
-  &.warn    { color: $warning; }
+  &.ok      { color: $accent-ink; }
+  &.err     { color: $danger-ink; }
+  &.warn    { color: $warning-ink; }
   &.loading { color: $text-2; }
 }
 
-// ─── Chip (pill для версии и тп) ─────────────────
+// ─── Chip (pill для версии, кнопки Стоп и т.п.) ──
 .nmo-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 2px 7px 2px 5px;
+  padding: 3px 8px;
   background: $bg-input;
   border: 1px solid $border-soft;
   border-radius: 999px;
   color: $text-3;
-  font-family: $font-mono;
+  font-family: $font-mono !important;
   font-size: $fs-xs;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
-  transition: all .15s;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
   text-decoration: none;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: $bg-chip;
     border-color: $border;
-    color: $text-2;
+    color: $text;
+  }
+
+  &:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
   }
 
   &.success {
     background: $success-soft;
-    border-color: rgba(74, 222, 155, 0.32);
-    color: $success;
+    border-color: $success-border;
+    color: $success-ink;
   }
 
   &.warning {
     background: $warning-soft;
-    border-color: rgba(245, 193, 75, 0.35);
-    color: $warning;
+    border-color: $warning-border;
+    color: $warning-ink;
+  }
+}
+
+.nmo-stop-chip.active {
+  background: $danger-soft;
+  border-color: $danger-border;
+  color: $danger-text;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 122, 122, 0.2);
+    border-color: $danger;
+    color: $danger-ink;
   }
 }
 
@@ -465,6 +539,7 @@ textarea.nmo-input {
       background: #fff;
       border-radius: 50%;
       transition: left .15s;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
     }
   }
 
@@ -486,7 +561,7 @@ textarea.nmo-input {
   padding: 12px 14px;
   text-align: center;
   font-size: $fs-sm;
-  color: $danger;
+  color: $danger-ink;
 }
 
 // ─── Animations ──────────────────────────────────
@@ -495,7 +570,7 @@ textarea.nmo-input {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.nmo-fade-up { animation: nmo-fade-up .25s ease both; }
+.nmo-fade-up { animation: nmo-fade-up .22s ease both; }
 
 @keyframes nmo-pulse-soft {
   0%, 100% { opacity: 1; }
@@ -529,32 +604,85 @@ textarea.nmo-input {
 .nmo-between { justify-content: space-between; }
 .nmo-grow { flex: 1; min-width: 0; }
 
-.nmo-fullpanel { max-height: calc(100vh - 32px); overflow-y: auto; overflow-x: hidden; }
-#nmo-panel :focus-visible { outline: 2px solid $accent; outline-offset: 2px; }
-.nmo-titlebar { flex-wrap: wrap; }
-.nmo-base-record { padding: 10px 0; border-bottom: 1px solid $border; overflow-wrap: anywhere; }
-.nmo-base-choice { display: flex; align-items: start; gap: 6px; margin: 8px 0; }
-@media (prefers-reduced-motion: reduce) { #nmo-panel * { animation: none !important; transition: none !important; } }
-
-#nmo-panel[data-theme="light"] {
-  --nmo-bg-canvas: #f5f7fa;
-  --nmo-bg-frame: #ffffff;
-  --nmo-bg-frame-2: #f4f6fa;
-  --nmo-bg-input: #f6f8fb;
-  --nmo-bg-input-hover: #fff;
-  --nmo-bg-chip: #edf1f6;
-  --nmo-bg-chip-hover: #e1e8f0;
-  --nmo-border: #d3dce7;
-  --nmo-border-soft: #e1e7ef;
-  --nmo-border-strong: #a5b4c6;
-  --nmo-text: #1b293b;
-  --nmo-text-2: #43546a;
-  --nmo-text-3: #586a7f;
-  --nmo-text-disabled: #65768a;
-  --nmo-success-text: #17653e;
-  --nmo-warning-text: #775500;
-  --nmo-danger-text: #a32121;
-  --nmo-info-text: #234f92;
+#nmo-panel :focus-visible,
+[data-nmo-portal] :focus-visible {
+  outline: 2px solid $accent;
+  outline-offset: 2px;
 }
 
-.nmo-provenance { margin: 0 14px 10px; padding: 8px; font-size: 11px; color: $text-2; background: $bg-input; border-radius: 6px; overflow-wrap: anywhere; }
+.nmo-titlebar { flex-wrap: wrap; }
+.nmo-base-record { padding: 10px 0; border-bottom: 1px solid $border-soft; overflow-wrap: anywhere; }
+.nmo-base-choice { display: flex; align-items: flex-start; gap: 8px; margin: 7px 0; cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  #nmo-panel *,
+  [data-nmo-portal] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+// ─── Light Theme (панель + порталы в document.body) ──
+#nmo-panel[data-theme="light"],
+[data-nmo-theme="light"] {
+  color-scheme: light;
+  --nmo-bg-canvas: #f4f7fb;
+  --nmo-bg-frame: #ffffff;
+  --nmo-bg-frame-2: #f6f8fc;
+  --nmo-bg-input: #f3f6fb;
+  --nmo-bg-input-hover: #ffffff;
+  --nmo-bg-chip: #eaeff6;
+  --nmo-bg-chip-hover: #dde5f0;
+  --nmo-border: #d0dae7;
+  --nmo-border-soft: #e2e8f1;
+  --nmo-border-strong: #9fb0c5;
+  --nmo-text: #162334;
+  --nmo-text-2: #3d4f65;
+  --nmo-text-3: #56687e;
+  --nmo-text-disabled: #7b8ca0;
+  --nmo-accent-ink: #0d8a56;
+  --nmo-accent-soft: rgba(16, 163, 102, 0.11);
+  --nmo-accent-ring: rgba(16, 163, 102, 0.30);
+  --nmo-success-ink: #0d8a56;
+  --nmo-success-soft: rgba(16, 163, 102, 0.10);
+  --nmo-success-border: rgba(16, 163, 102, 0.28);
+  --nmo-success-text: #11623d;
+  --nmo-warning-ink: #9a6700;
+  --nmo-warning-soft: rgba(217, 155, 18, 0.11);
+  --nmo-warning-border: rgba(196, 138, 12, 0.30);
+  --nmo-warning-text: #6e4a00;
+  --nmo-danger-ink: #b92525;
+  --nmo-danger-soft: rgba(217, 56, 56, 0.10);
+  --nmo-danger-border: rgba(204, 51, 51, 0.28);
+  --nmo-danger-text: #941b1b;
+  --nmo-info-ink: #1e56a8;
+  --nmo-info-soft: rgba(45, 114, 217, 0.10);
+  --nmo-info-border: rgba(45, 114, 217, 0.28);
+  --nmo-info-text: #1d498c;
+  --nmo-tier-low-text: #0f7649;
+  --nmo-tier-low-border: rgba(16, 163, 102, 0.32);
+  --nmo-tier-medium-border: rgba(196, 138, 12, 0.34);
+  --nmo-tier-high-bg: rgba(224, 109, 43, 0.11);
+  --nmo-tier-high-text: #9a3e08;
+  --nmo-tier-high-border: rgba(210, 96, 30, 0.32);
+  --nmo-tier-ultra-bg: rgba(147, 68, 196, 0.10);
+  --nmo-tier-ultra-text: #6d269b;
+  --nmo-tier-ultra-border: rgba(147, 68, 196, 0.30);
+  --nmo-shadow-pop: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 18px 42px -14px rgba(15, 32, 56, 0.20), 0 4px 12px -4px rgba(15, 32, 56, 0.08);
+  --nmo-shadow-pill: 0 10px 26px -8px rgba(15, 32, 56, 0.18);
+  --nmo-shadow-cta: 0 6px 16px -6px rgba(16, 163, 102, 0.36);
+  --nmo-shadow-dropdown: 0 16px 36px -8px rgba(15, 32, 56, 0.22);
+}
+
+.nmo-provenance {
+  margin: 0 14px 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: $text-2;
+  background: $bg-input;
+  border: 1px solid $border-soft;
+  border-radius: $r-sm + 2px;
+  overflow-wrap: anywhere;
+  flex-shrink: 0;
+}

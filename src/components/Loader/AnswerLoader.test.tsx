@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 describe('AnswerLoader', () => {
-	it.each(['reshtestnmo', 'otvnmo', 'test-nmo', 'pro-nmo', 'tests-nmo'])('загружает выбранную новую базу %s', async source => {
+	it.each(['reshtestnmo', 'otvnmo', 'test-nmo', 'pro-nmo', 'tests-nmo', 'topquiz', 'medstandartprof', 'portal-nmo', 'bogoslavsky'])('загружает выбранную новую базу %s', async source => {
 		const model = [{question: 'Вопрос', variants: ['A', 'B'], answers: ['B'], idx: 0}];
 		mocks.detectSource.mockReturnValue(source);
 		additional.get.mockResolvedValue(model);

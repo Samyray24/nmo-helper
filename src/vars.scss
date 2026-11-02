@@ -21,47 +21,52 @@ $text-disabled:    var(--nmo-text-disabled, #4a5070);
 // ─── Accent (warm mint) ──────────────────────────
 $accent:           #4ade9b;
 $accent-2:         #2cc485;
-$accent-soft:      rgba(74, 222, 155, 0.14);
-$accent-ring:      rgba(74, 222, 155, 0.28);
+$accent-ink:       var(--nmo-accent-ink, #4ade9b);     // текст/иконки поверх светлого или тёмного фона
+$accent-soft:      var(--nmo-accent-soft, rgba(74, 222, 155, 0.14));
+$accent-ring:      var(--nmo-accent-ring, rgba(74, 222, 155, 0.28));
 $accent-text:      #06231a;     // текст поверх accent-fill (контрастно)
 
 // ─── Semantic states ─────────────────────────────
 $success:          #4ade9b;
-$success-soft:     rgba(74, 222, 155, 0.12);
-$success-border:   rgba(74, 222, 155, 0.28);
+$success-ink:      var(--nmo-success-ink, #4ade9b);
+$success-soft:     var(--nmo-success-soft, rgba(74, 222, 155, 0.12));
+$success-border:   var(--nmo-success-border, rgba(74, 222, 155, 0.28));
 $success-text:     var(--nmo-success-text, #b3f1d2);
 
 $warning:          #f5c14b;
-$warning-soft:     rgba(245, 193, 75, 0.12);
-$warning-border:   rgba(245, 193, 75, 0.28);
+$warning-ink:      var(--nmo-warning-ink, #f5c14b);
+$warning-soft:     var(--nmo-warning-soft, rgba(245, 193, 75, 0.12));
+$warning-border:   var(--nmo-warning-border, rgba(245, 193, 75, 0.28));
 $warning-text:     var(--nmo-warning-text, #f5dba0);
 
 $danger:           #ff7a7a;
-$danger-soft:      rgba(255, 122, 122, 0.12);
-$danger-border:    rgba(255, 122, 122, 0.28);
+$danger-ink:       var(--nmo-danger-ink, #ff7a7a);
+$danger-soft:      var(--nmo-danger-soft, rgba(255, 122, 122, 0.12));
+$danger-border:    var(--nmo-danger-border, rgba(255, 122, 122, 0.28));
 $danger-text:      var(--nmo-danger-text, #ffc4c4);
 
 $info:             #7aa9ff;
-$info-soft:        rgba(122, 169, 255, 0.12);
-$info-border:      rgba(122, 169, 255, 0.28);
+$info-ink:         var(--nmo-info-ink, #7aa9ff);
+$info-soft:        var(--nmo-info-soft, rgba(122, 169, 255, 0.12));
+$info-border:      var(--nmo-info-border, rgba(122, 169, 255, 0.28));
 $info-text:        var(--nmo-info-text, #c4d6ff);
 
 // ─── Tier badges (AI models) ─────────────────────
 $tier-low-bg:      $success-soft;
-$tier-low-text:    #86e8b6;
-$tier-low-border:  rgba(74, 222, 155, 0.30);
+$tier-low-text:    var(--nmo-tier-low-text, #86e8b6);
+$tier-low-border:  var(--nmo-tier-low-border, rgba(74, 222, 155, 0.30));
 
 $tier-medium-bg:   $warning-soft;
 $tier-medium-text: $warning-text;
-$tier-medium-border: rgba(245, 193, 75, 0.32);
+$tier-medium-border: var(--nmo-tier-medium-border, rgba(245, 193, 75, 0.32));
 
-$tier-high-bg:     rgba(255, 165, 122, 0.12);
-$tier-high-text:   #ffc89d;
-$tier-high-border: rgba(255, 165, 122, 0.32);
+$tier-high-bg:     var(--nmo-tier-high-bg, rgba(255, 165, 122, 0.12));
+$tier-high-text:   var(--nmo-tier-high-text, #ffc89d);
+$tier-high-border: var(--nmo-tier-high-border, rgba(255, 165, 122, 0.32));
 
-$tier-ultra-bg:    rgba(208, 144, 240, 0.12);
-$tier-ultra-text:  #d8a8ec;
-$tier-ultra-border: rgba(208, 144, 240, 0.32);
+$tier-ultra-bg:    var(--nmo-tier-ultra-bg, rgba(208, 144, 240, 0.12));
+$tier-ultra-text:  var(--nmo-tier-ultra-text, #d8a8ec);
+$tier-ultra-border: var(--nmo-tier-ultra-border, rgba(208, 144, 240, 0.32));
 
 // ─── Source badges ───────────────────────────────
 $src-primary:       $accent;
@@ -108,7 +113,7 @@ $font-size-sm:     $fs-sm;
 $font-size-xs:     $fs-xs;
 
 // ─── Shadow ──────────────────────────────────────
-$shadow-pop:       0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 40px -20px rgba(0, 0, 0, 0.6);
-$shadow-pill:      0 8px 24px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-$shadow-cta:       0 6px 18px -8px rgba(74, 222, 155, 0.5);
-$shadow-dropdown:  0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+$shadow-pop:       var(--nmo-shadow-pop, (0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 40px -20px rgba(0, 0, 0, 0.6)));
+$shadow-pill:      var(--nmo-shadow-pill, (0 8px 24px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02) inset));
+$shadow-cta:       var(--nmo-shadow-cta, 0 6px 18px -8px rgba(74, 222, 155, 0.5));
+$shadow-dropdown:  var(--nmo-shadow-dropdown, (0 18px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.02) inset));

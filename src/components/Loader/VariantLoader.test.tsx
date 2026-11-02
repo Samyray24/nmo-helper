@@ -113,8 +113,8 @@ describe('VariantLoader', () => {
 		additional.search.mockImplementation(async (_query, source) => [{source, title: 'Новая тема', url: `https://${source}.ru/test`}]);
 		const onChange = vi.fn();
 		render(<VariantLoader text="Тема" onChange={onChange}/>);
-		await waitFor(() => expect(onChange.mock.lastCall?.[0].data).toHaveLength(5));
-		expect(additional.search).toHaveBeenCalledTimes(5);
+		await waitFor(() => expect(onChange.mock.lastCall?.[0].data).toHaveLength(9));
+		expect(additional.search).toHaveBeenCalledTimes(9);
 	});
 
 	it('первый этап авто-поиска не запрашивает дополнительные базы', async () => {

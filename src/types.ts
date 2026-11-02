@@ -68,7 +68,16 @@ export interface IAiModel {
 }
 
 /** Ключ источника ответов */
-export type AdditionalSourceKey = 'reshtestnmo' | 'otvnmo' | 'test-nmo' | 'pro-nmo' | 'tests-nmo';
+export type AdditionalSourceKey =
+	| 'reshtestnmo'
+	| 'otvnmo'
+	| 'test-nmo'
+	| 'pro-nmo'
+	| 'tests-nmo'
+	| 'topquiz'
+	| 'medstandartprof'
+	| 'portal-nmo'
+	| 'bogoslavsky';
 export type ISourceKey = 'first' | 'second' | 'third' | 'nmo-helper' | AdditionalSourceKey;
 
 /** Найденный вариант источника ответов. */

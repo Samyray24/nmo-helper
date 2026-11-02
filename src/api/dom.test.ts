@@ -63,6 +63,18 @@ describe('fn getTopicElement', () => {
 		expect(getTopicElement()?.textContent).toBe('new');
 	});
 
+	it('пропускает карточку вопроса (.mat-mdc-card-title внутри #questionAnchor) и берёт настоящую тему', () => {
+		document.body.innerHTML = `
+			<lib-quiz-page>
+				<div class="v-label v-label-h2">Артериальная гипертензия - 2024</div>
+				<div id="questionAnchor">
+					<div class="mat-mdc-card-title"><span class="question-title-text">Вопрос 1?</span></div>
+				</div>
+			</lib-quiz-page>
+		`;
+		expect(getTopicElement()?.textContent).toBe('Артериальная гипертензия - 2024');
+	});
+
 	it('null если темы нет', () => {
 		expect(getTopicElement()).toBeNull();
 	});

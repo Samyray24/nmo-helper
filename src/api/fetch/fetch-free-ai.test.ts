@@ -6,6 +6,9 @@ import {
 	HORDE_MODELS_URL,
 	OVH_AI_MODEL,
 	OVH_AI_URL,
+	OVH_GPT_OSS_MODEL,
+	OVH_OPENAI_URL,
+	OVH_QWEN_MODEL,
 	resolveFreeAiRequest,
 	selectHordeModel,
 } from './fetch-free-ai';
@@ -51,6 +54,32 @@ describe('selectHordeModel', () => {
 });
 
 describe('resolveFreeAiRequest', () => {
+	it('GPT-OSS и Qwen работают через OVH OpenAI endpoint с увеличенным лимитом токенов', async () => {
+		const gptOss = await resolveFreeAiRequest('gpt-oss');
+		const qwen = await resolveFreeAiRequest('qwen');
+
+		expect(gptOss).toEqual({
+			apiKey: '',
+			endpoint: OVH_OPENAI_URL,
+			model: OVH_GPT_OSS_MODEL,
+			requestOptions: {
+				timeoutMs: 30_000,
+				maxTokens: 2048,
+				extraBody: {temperature: 0, reasoning_effort: 'low'},
+			},
+		});
+		expect(qwen).toEqual({
+			apiKey: '',
+			endpoint: OVH_OPENAI_URL,
+			model: OVH_QWEN_MODEL,
+			requestOptions: {
+				timeoutMs: 30_000,
+				maxTokens: 2048,
+				extraBody: {temperature: 0},
+			},
+		});
+	});
+
 	it('OVH работает без ключа и получает клиентский таймаут 30 секунд', async () => {
 		const config = await resolveFreeAiRequest('ovh');
 
@@ -110,20 +139,20 @@ describe('resolveFreeAiRequest', () => {
 });
 
 describe('askFreeAI automatic route', () => {
-	it('сначала использует OVH и не трогает Horde при успешном ответе', async () => {
+	it('сначала использует GPT-OSS 120B и не трогает резервные сервисы при успешном ответе', async () => {
 		const answer = JSON.stringify({choices: [{message: {content: '2'}}]});
 		sendMessage.mockImplementation((_msg, cb) => cb({error: false, status: 200, text: answer}));
 
 		const result = await askFreeAI('Вопрос?', ['a', 'b', 'c'], true, 'Тема');
 		const [message] = sendMessage.mock.calls[0] as [Record<string, unknown>, unknown];
 
-		expect(result).toEqual({correctIndexes: [1], source: 'OVH'});
+		expect(result).toEqual({correctIndexes: [1], source: 'GPT-OSS 120B'});
 		expect(sendMessage).toHaveBeenCalledTimes(1);
-		expect(message.url).toBe(OVH_AI_URL);
+		expect(message.url).toBe(OVH_OPENAI_URL);
 		expect((message.headers as Record<string, string>).Authorization).toBeUndefined();
 	});
 
-	it('при лимите OVH сам выбирает модель Horde и повторяет вопрос', async () => {
+	it('при лимитах OVH-моделей сам выбирает модель Horde и повторяет вопрос', async () => {
 		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const models = JSON.stringify({
 			data: [
@@ -133,23 +162,23 @@ describe('askFreeAI automatic route', () => {
 		const answer = JSON.stringify({choices: [{message: {content: '1,3'}}]});
 
 		sendMessage.mockImplementation((message: Record<string, unknown>, cb) => {
-			if (message.url === OVH_AI_URL) return cb({error: false, status: 429, text: ''});
+			if (message.url === OVH_OPENAI_URL || message.url === OVH_AI_URL) return cb({error: false, status: 429, text: ''});
 			if (message.url === HORDE_MODELS_URL) return cb({error: false, status: 200, text: models});
 			return cb({error: false, status: 200, text: answer});
 		});
 
 		const result = await askFreeAI('Вопрос?', ['a', 'b', 'c'], false, 'Тема');
-		const hordeRequest = sendMessage.mock.calls[2][0] as Record<string, unknown>;
+		const hordeRequest = sendMessage.mock.calls[4][0] as Record<string, unknown>;
 
 		expect(result).toEqual({correctIndexes: [0, 2], source: 'AI Horde'});
-		expect(sendMessage).toHaveBeenCalledTimes(3);
+		expect(sendMessage).toHaveBeenCalledTimes(5);
 		expect(hordeRequest.url).toBe(HORDE_AI_URL);
 		expect((hordeRequest.headers as Record<string, string>).Authorization).toBe(`Bearer ${HORDE_ANONYMOUS_KEY}`);
 		expect(JSON.parse(hordeRequest.body as string)).toMatchObject({model: 'horde/auto', timeout: 120});
 		errorSpy.mockRestore();
 	});
 
-	it('переходит на Horde, если OVH не определил вариант', async () => {
+	it('переходит по цепочке Qwen → Llama → Horde, если предыдущая модель не определила вариант', async () => {
 		const models = JSON.stringify({
 			data: [{id: 'horde/auto', template: 'chatml', worker_threads: 1}],
 		});
@@ -158,8 +187,8 @@ describe('askFreeAI automatic route', () => {
 		let call = 0;
 		sendMessage.mockImplementation((_message, cb) => {
 			call += 1;
-			if (call === 1) return cb({error: false, status: 200, text: emptyAnswer});
-			if (call === 2) return cb({error: false, status: 200, text: models});
+			if (call <= 3) return cb({error: false, status: 200, text: emptyAnswer});
+			if (call === 4) return cb({error: false, status: 200, text: models});
 			return cb({error: false, status: 200, text: hordeAnswer});
 		});
 

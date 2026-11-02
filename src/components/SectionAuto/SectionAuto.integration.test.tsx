@@ -42,6 +42,7 @@ describe('Полный маршрут автоматического поиск�
 	it('находит ответ по вопросу в новой базе без ручного ввода адреса', async () => {
 		mockFetch.mockImplementation(async url => {
 			const parsed = new URL(url);
+			if (parsed.pathname === '/api/test-search') return ok('{"docs":[]}');
 			if (parsed.searchParams.has('s')) return ok(parsed.hostname === 'otvnmo.ru' && parsed.searchParams.get('s') === state.question
 				? '<article><h2 class="entry-title"><a href="/test">Ответы на тесты НМО: Тема</a></h2></article>' : 'нет результатов');
 			return ok(`<div class="entry-content"><h3>1. ${state.question}</h3><p>1) Первый;<br>2) Второй; +</p></div>`);
@@ -62,7 +63,7 @@ describe('Полный маршрут автоматического поиск�
 	it('завершает поиск предупреждением, когда ответа нигде нет', async () => {
 		mockFetch.mockResolvedValue(ok('нет результатов'));
 		setup();
-		await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(10));
+		await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(18));
 		await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('warn: ответ не найден'));
 		expect(answerCache.get('Тема', state.question, state.variants)).toBeNull();
 	});

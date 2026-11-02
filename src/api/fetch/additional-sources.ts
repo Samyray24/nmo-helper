@@ -2,7 +2,7 @@ import type {AdditionalSourceKey, ISearchResult} from '../../types';
 import type {IParse2Result, QaCaseModel} from '../../utils/cases';
 import {findAnswers} from '../../utils/cases';
 import {ADDITIONAL_SOURCES, LOW_CONFIDENCE_THRESHOLD} from '../../utils/constants';
-import {extractAdditionalCases, isAdditionalSource, parseAdditionalSearchResults} from '../../utils/additional-sources';
+import {buildAdditionalSearchUrl, extractAdditionalCases, isAdditionalSource, parseAdditionalSearchResults} from '../../utils/additional-sources';
 import {detectSource, stripAnswerTitlePrefix, variantScore} from '../../utils/matching';
 import {fetchViaBackground, getResponseText, mapWithConcurrency} from './fetch';
 import {sourceHealth} from '../../utils/source-health';
@@ -27,13 +27,11 @@ export function clearAdditionalSourceCaches(): void {
 export async function searchAdditionalSource(query: string, source: AdditionalSourceKey): Promise<ISearchResult[]> {
 	const normalized = query.trim().replace(/\s+/g, ' ');
 	if (!normalized) return [];
-	const config = ADDITIONAL_SOURCES.find(item => item.key === source)!;
-	const url = new URL(`https://${config.host}/`);
-	url.searchParams.set('s', normalized);
-	const results = await cachedLoad(searchCache, url.href, 4 * 60 * 1000, 60, async () => {
-		const response = await fetchViaBackground(url.href, REQUEST_OPTIONS);
+	const searchUrl = buildAdditionalSearchUrl(normalized, source);
+	const results = await cachedLoad(searchCache, searchUrl, 4 * 60 * 1000, 90, async () => {
+		const response = await fetchViaBackground(searchUrl, REQUEST_OPTIONS);
 		const parsed = parseAdditionalSearchResults(getResponseText(response), source);
-		sourceHealth.recordSearchResult(url.href, parsed.length);
+		sourceHealth.recordSearchResult(searchUrl, parsed.length);
 		return parsed;
 	});
 	return results.map(result => ({...result}));
@@ -42,7 +40,7 @@ export async function searchAdditionalSource(query: string, source: AdditionalSo
 export async function getAdditionalAnswers(url: string): Promise<QaCaseModel[]> {
 	const source = detectSource(url);
 	if (!source || !isAdditionalSource(source)) throw new Error('URL не относится к дополнительной базе');
-	const results = await cachedLoad(pageCache, url, 10 * 60 * 1000, 30, async () => {
+	const results = await cachedLoad(pageCache, url, 10 * 60 * 1000, 45, async () => {
 		const response = await fetchViaBackground(url, REQUEST_OPTIONS);
 		return extractAdditionalCases(getResponseText(response), source);
 	});

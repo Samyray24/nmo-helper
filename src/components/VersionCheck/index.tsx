@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import cn from 'classnames';
 import './styles.scss';
-import {IconCheck, IconRefresh} from '../icons';
+import {IconCheck, IconRefresh, IconWarn} from '../icons';
 import {checkVersion, isOutdated, type IVersionInfo} from '../../api/version-check';
 
 const EXT_VERSION = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest?.()?.version) || '0.0.0';
@@ -53,16 +53,15 @@ const VersionCheck: React.FC<IProps> = ({onOutdated}) => {
 		? 'Проверить обновления'
 		: state === 'checking'
 			? 'Проверяю на сервере…'
-		 : state === 'uptodate'
+			: state === 'uptodate'
 				? 'У вас последняя версия'
-		 : 'Доступна новая версия';
+				: 'Доступна новая версия';
 
 	return (
 		<div className="nmo-version-wrap"
 			onMouseEnter={() => setHover(true)}
 			onMouseLeave={() => setHover(false)}>
 			<button type="button"
-				title={tooltip}
 				aria-label={tooltip}
 				className={cn('nmo-chip', 'nmo-version-chip', state)}
 				disabled={state === 'checking'}
@@ -71,6 +70,7 @@ const VersionCheck: React.FC<IProps> = ({onOutdated}) => {
 					{state === 'checking' && <span className="nmo-spinner" style={{width: 9, height: 9, borderWidth: 1.4}}/>}
 					{state === 'uptodate' && <IconCheck size={10}/>}
 					{state === 'outdated' && <span className="nmo-version-dot"/>}
+					{state === 'unavailable' && <IconWarn size={10}/>}
 					{state === 'idle' && <IconRefresh size={10} className={cn({rot: hover})}/>}
 				</span>
 				<span>v{EXT_VERSION}</span>

@@ -27,13 +27,17 @@ export const UPDATE_URL = 'https://github.com/Samyray24/nmo-helper/releases/late
 export const FIRST_ANSWER_SOURCE_HOST = 'rosmedicinfo.ru';
 export const SECOND_ANSWER_SOURCE_HOST = '24forcare.com';
 export const THIRD_ANSWER_SOURCE_HOST = 'testotvet.com';
-/** Открытые HTML-базы, используемые после основных источников. */
+/** Открытые HTML/JSON-базы ответов НМО, используемые после основных источников. */
 export const ADDITIONAL_SOURCES: readonly {key: AdditionalSourceKey; host: string; label: string; boldAnswers?: boolean}[] = [
 	{key: 'reshtestnmo', host: 'reshtestnmo.ru', label: 'РешТестНМО'},
 	{key: 'otvnmo', host: 'otvnmo.ru', label: 'ОТВ НМО'},
 	{key: 'test-nmo', host: 'test-nmo.ru', label: 'Тест НМО'},
 	{key: 'pro-nmo', host: 'pro-nmo.ru', label: 'Про НМО', boldAnswers: true},
 	{key: 'tests-nmo', host: 'tests-nmo.ru', label: 'Тесты НМО'},
+	{key: 'topquiz', host: 'topquiz.ru', label: 'TopQuiz'},
+	{key: 'medstandartprof', host: 'medstandartprof.ru', label: 'МедСтандартПроф'},
+	{key: 'portal-nmo', host: 'xn----7sb7afecfbku.xn--p1ai', label: 'Портал НМО'},
+	{key: 'bogoslavsky', host: 'bogoslavsky.pro', label: 'Богославский'},
 ];
 //
 export const NMO_API_HOST = 'nmo-helper.ru';
@@ -47,7 +51,7 @@ export const NMO_API_TOPIC_ENDPOINT = `${NMO_API_BASE_URL}/topic`;
  */
 export const SELECTORS = {
 	/** Заголовок темы теста */
-	topic: ['.mat-card-title-quiz-custom', '.mat-mdc-card-title', '.v-label.v-label-h2'],
+	topic: ['.mat-card-title-quiz-custom', '.v-label.v-label-h2', '.mat-mdc-card-title'],
 	/** Контейнер текущего вопроса */
 	questionAnchor: ['#questionAnchor', '[data-testid="question-anchor"]', 'lib-quiz-question'],
 	/** Текст вопроса (внутри questionAnchor) */
