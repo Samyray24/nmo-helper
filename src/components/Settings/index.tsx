@@ -20,8 +20,12 @@ const Settings: React.FC<ISettingsProps> = ({onOpen}) => {
 
 	useLayoutEffect(() => {
 		const anchor = settingsRef.current;
-		if (!open || !anchor) return;
-		const panel = anchor.closest('#nmo-panel');
+		const panel = anchor?.closest<HTMLElement>('#nmo-panel') ?? null;
+		if (!open || !anchor) {
+			panel?.removeAttribute('data-settings-open');
+			return;
+		}
+		panel?.setAttribute('data-settings-open', 'true');
 		const updateHeight = (): void => {
 			const bottom = Math.min(window.innerHeight, panel?.getBoundingClientRect().bottom ?? window.innerHeight);
 			setMenuMaxHeight(Math.max(0, bottom - anchor.getBoundingClientRect().bottom - 10));
@@ -31,6 +35,7 @@ const Settings: React.FC<ISettingsProps> = ({onOpen}) => {
 		const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateHeight);
 		if (panel) observer?.observe(panel);
 		return () => {
+			panel?.removeAttribute('data-settings-open');
 			window.removeEventListener('resize', updateHeight);
 			observer?.disconnect();
 		};

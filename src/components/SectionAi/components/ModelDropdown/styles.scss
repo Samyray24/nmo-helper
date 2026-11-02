@@ -40,9 +40,9 @@
   gap: 6px;
 }
 
-.nmo-md-rec { color: $warning; flex-shrink: 0; }
+.nmo-md-rec { color: $warning-ink; flex-shrink: 0; }
 .nmo-md-pricey {
-  color: $danger;
+  color: $danger-ink;
   font-weight: 700;
   font-size: 8.5px;
   flex-shrink: 0;
@@ -67,14 +67,14 @@
 
 .nmo-md-list {
   position: fixed;
+  display: flex;
+  flex-direction: column;
   background: $bg-frame-2;
   border: 1px solid $border-strong;
   border-radius: $r-md;
   z-index: 100000;
   box-shadow: $shadow-dropdown;
-  max-height: 240px;
-  overflow-y: auto;
-  // dropdown в document.body, не наследует от #nmo-panel
+  overflow: hidden;
   font-family: $font-ui;
   font-size: $fs-base;
   letter-spacing: -0.005em;
@@ -83,12 +83,42 @@
   font-feature-settings: 'ss01', 'cv11';
 
   *, button { font-family: inherit; letter-spacing: inherit; }
+}
+
+.nmo-md-search {
+  padding: 7px 8px;
+  border-bottom: 1px solid $border-soft;
+  background: $bg-frame-2;
+  flex-shrink: 0;
+}
+
+.nmo-md-search-input {
+  padding: 6px 9px;
+  font-size: $fs-md;
+  border-radius: $r-sm + 1px;
+}
+
+.nmo-md-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: $border-strong transparent;
 
   &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: $border-strong;
     border-radius: 2px;
   }
+}
+
+.nmo-md-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: $fs-sm;
+  color: $text-3;
 }
 
 .nmo-md-item {
@@ -96,10 +126,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 8px 10px;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid $border-soft;
   cursor: pointer;
   font-family: inherit;
   color: $text;
@@ -111,7 +142,10 @@
 
   &:hover { background: $bg-chip-hover; }
 
-  &.selected { background: $bg-chip; }
+  &.selected {
+    background: $accent-soft;
+    font-weight: 600;
+  }
 }
 
 .nmo-md-item-name {

@@ -5,47 +5,6 @@
   flex-shrink: 0;
 }
 
-.nmo-settings-field {
-  display: grid;
-  gap: 5px;
-  color: $text-3;
-  font-size: $fs-sm;
-
-  select,
-  input[type='range'] { width: 100%; }
-
-  select {
-    padding: 7px 8px;
-    border: 1px solid $border;
-    border-radius: $r-sm;
-    background: $bg-input;
-    color: $text;
-  }
-}
-
-.nmo-settings-advanced {
-  margin-top: 8px;
-  color: $text-3;
-  font-size: $fs-sm;
-
-  summary { cursor: pointer; color: $text-2; }
-
-  &[open] { display: grid; gap: 9px; }
-}
-
-.nmo-settings-check {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  line-height: 1.35;
-}
-
-.nmo-settings-diagnostics {
-  width: 100%; margin-top: 8px; padding: 7px 8px;
-  border: 1px solid $border; border-radius: $r-sm; background: $bg-input; color: $text-2;
-  font: inherit; cursor: pointer;
-}
-
 .nmo-settings-trigger.active {
   background: $bg-chip;
   color: $text;
@@ -55,20 +14,136 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: 20;
-  width: 244px;
+  z-index: 25;
+  width: 258px;
   overflow-y: auto;
-  padding: 6px;
+  overscroll-behavior: contain;
+  padding: 10px;
   background: $bg-frame-2;
-  border: 1px solid $border;
+  border: 1px solid $border-strong;
   border-radius: $r-md;
   box-shadow: $shadow-dropdown;
   cursor: default;
+  scrollbar-width: thin;
+  scrollbar-color: $border-strong transparent;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: $border-strong;
+    border-radius: 2px;
+  }
+}
+
+.nmo-settings-field {
+  display: grid;
+  gap: 5px;
+  color: $text-2;
+  font-size: $fs-sm;
+  font-weight: 500;
+
+  select,
+  input[type='range'] { width: 100%; }
+
+  select {
+    height: 32px;
+    padding: 6px 10px;
+    border: 1px solid $border;
+    border-radius: $r-sm;
+    background: $bg-input;
+    color: $text;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s, background .15s;
+
+    &:hover { border-color: $border-strong; }
+    &:focus { border-color: $accent; background: $bg-input-hover; }
+  }
+
+  input[type='range'] {
+    height: 18px;
+    margin: 2px 0 0;
+    accent-color: $accent;
+    cursor: pointer;
+  }
+}
+
+.nmo-settings-advanced {
+  margin-top: 8px;
+  padding: 7px 8px;
+  border: 1px solid $border-soft;
+  border-radius: $r-sm;
+  background: $bg-input;
+  color: $text-2;
+  font-size: $fs-sm;
+
+  summary {
+    cursor: pointer;
+    color: $text-2;
+    font-weight: 600;
+    font-size: 11.5px;
+    user-select: none;
+
+    &:hover { color: $text; }
+  }
+
+  &[open] {
+    display: grid;
+    gap: 9px;
+
+    summary {
+      margin-bottom: 2px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid $border-soft;
+      color: $text;
+    }
+  }
+}
+
+.nmo-settings-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.35;
+  color: $text-2;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    margin: 1px 0 0;
+    flex-shrink: 0;
+    accent-color: $accent;
+    cursor: pointer;
+  }
+}
+
+.nmo-settings-diagnostics {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid $border;
+  border-radius: $r-sm;
+  background: $bg-chip;
+  color: $text;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+
+  &:hover {
+    background: $bg-chip-hover;
+    border-color: $border-strong;
+  }
 }
 
 .nmo-settings-option {
   min-height: 34px;
-  padding: 7px 8px;
+  padding: 6px 8px;
   border-radius: $r-sm;
   display: flex;
   align-items: center;
@@ -86,7 +161,7 @@
 
 .nmo-settings-divider {
   height: 1px;
-  margin: 6px 8px;
+  margin: 8px 2px 6px;
   background: $border-soft;
 }
 
@@ -105,7 +180,7 @@
 .nmo-settings-option-text {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1.25;
 }
@@ -140,8 +215,8 @@
 }
 
 .nmo-settings-section {
-  margin-top: 6px;
-  padding: 9px 8px 8px;
+  margin-top: 8px;
+  padding: 8px 0 2px;
   border-top: 1px solid $border-soft;
 
   &.disabled {
@@ -156,14 +231,14 @@
   font-size: 11px;
   font-weight: 600;
   line-height: 1.25;
-  color: $text;
+  color: $text-2;
 }
 
 .nmo-settings-range {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 7px;
-  margin-top: 8px;
+  margin-top: 7px;
 }
 
 .nmo-settings-number-field {
@@ -179,14 +254,14 @@
   input {
     width: 100%;
     height: 30px;
-    padding: 6px 7px;
+    padding: 6px 8px;
     border: 1px solid $border;
     border-radius: $r-sm;
     outline: none;
     background: $bg-input;
     color: $text;
-    font-family: $font-mono;
-    font-size: 11px;
+    font-family: $font-mono !important;
+    font-size: 11.5px;
     transition: background .15s, border-color .15s;
 
     &:focus {
@@ -196,7 +271,8 @@
 
     &:disabled {
       color: $text-disabled;
-      background: rgba(14, 19, 32, 0.55);
+      background: $bg-input;
+      opacity: 0.55;
       border-color: $border-soft;
       cursor: not-allowed;
     }

@@ -26,6 +26,28 @@ describe('findAnswers — источник совпадения', () => {
 		const model: QaCaseModel[] = [{question: 'Вопрос из базы', variants: ['a', 'b'], answers: ['b'], idx: 0}];
 		expect(findAnswers(model, 'Вопрос из базы', ['a', 'b'])?.matchedQuestion).toBe('Вопрос из базы');
 	});
+	it('сначала выбирает точный набор вариантов вместо более раннего похожего', () => {
+		const question = 'Какой метод лечения применяется';
+		const variants = ['метод лечения альфа у взрослых', 'метод лечения бета у взрослых'];
+		const model: QaCaseModel[] = [
+			{question, variants: ['метод лечения альфа', 'метод лечения бета'], answers: ['метод лечения альфа'], idx: 0},
+			{question: 'КАКОЙ  МЕТОД ЛЕЧЕНИЯ ПРИМЕНЯЕТСЯ', variants: [...variants].reverse(), answers: [variants[1]], idx: 1},
+		];
+		expect(findAnswers(model, question, variants)).toEqual({
+			answers: [variants[1]],
+			score: 1,
+			matchedQuestion: 'КАКОЙ  МЕТОД ЛЕЧЕНИЯ ПРИМЕНЯЕТСЯ',
+		});
+	});
+	it('точный вопрос имеет приоритет над похожим с большим покрытием вариантов', () => {
+		const question = 'Какой метод лечения применяется';
+		const variants = ['метод альфа', 'метод бета', 'метод гамма'];
+		const model: QaCaseModel[] = [
+			{question: `${question} у взрослых`, variants, answers: [variants[1]], idx: 0},
+			{question, variants: [variants[0], 'другой способ'], answers: [variants[0]], idx: 1},
+		];
+		expect(findAnswers(model, question, variants)?.answers).toEqual([variants[0]]);
+	});
 });
 
 /**

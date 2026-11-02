@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useSettings} from '../../contexts/SettingsContext';
+import {useActiveTheme} from '../../utils/theme';
 import './styles.scss';
 
 const MASCOT_URL = chrome.runtime.getURL('icons/new_icon.png');
@@ -10,6 +11,7 @@ export interface IModalAnswerSharingProps {
 }
 
 const ModalAnswerSharing: React.FC<IModalAnswerSharingProps> = ({questionCount, onChange}) => {
+	const theme = useActiveTheme();
 	const {enabled, setEnabled} = useSettings().testDataSharing;
 	const [rememberChoice, setRememberChoice] = useState(enabled);
 
@@ -27,9 +29,13 @@ const ModalAnswerSharing: React.FC<IModalAnswerSharingProps> = ({questionCount, 
 	});
 
 	return (
-		<div className="nmo-answer-sharing-backdrop" onMouseDown={event => {
-			if (event.target === event.currentTarget) handleChange(false);
-		}}>
+		<div
+			data-nmo-portal=""
+			data-nmo-theme={theme}
+			className="nmo-answer-sharing-backdrop"
+			onMouseDown={event => {
+				if (event.target === event.currentTarget) handleChange(false);
+			}}>
 			<section
 				className="nmo-answer-sharing-dialog nmo-fade-up"
 				role="dialog"

@@ -7,6 +7,17 @@ const out = path.join(root, 'ГОТОВЫЕ ВЕРСИИ', '05 - Firefox - ко�
 const releases = path.join(root, 'releases');
 fs.mkdirSync(out, {recursive: true});
 fs.mkdirSync(releases, {recursive: true});
+
+for (const dir of [out, releases]) {
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    if (!entry.isFile() || !entry.name.startsWith('mozilla-') || !entry.name.endsWith('.zip')) continue;
+    const match = entry.name.match(/([0-9]+[.][0-9]+[.][0-9]+)/);
+    if (match && match[1] !== version) {
+      fs.unlinkSync(path.join(dir, entry.name));
+    }
+  }
+}
+
 function files(directory, prefix = '') {
   const result = {};
   for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {

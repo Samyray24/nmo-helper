@@ -5,19 +5,29 @@
 }
 
 .nmo-version-chip {
-  // унаследовано от .nmo-chip
-  &:disabled { cursor: default; }
+  padding: 2px 7px 2px 5px;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.75;
+  }
 
   &.uptodate {
     background: $success-soft;
-    border-color: rgba(74, 222, 155, 0.32);
-    color: $success;
+    border-color: $success-border;
+    color: $success-ink;
   }
 
   &.outdated {
     background: $warning-soft;
-    border-color: rgba(245, 193, 75, 0.35);
-    color: $warning;
+    border-color: $warning-border;
+    color: $warning-ink;
+  }
+
+  &.unavailable {
+    background: $warning-soft;
+    border-color: $warning-border;
+    color: $warning-ink;
   }
 }
 
@@ -43,15 +53,18 @@
 .nmo-version-tip {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
+  max-width: min(230px, calc(100vw - 64px));
+  width: max-content;
   padding: 5px 8px;
   background: $bg-frame-2;
   border: 1px solid $border-strong;
   border-radius: $r-sm;
   font-size: 10.5px;
+  line-height: 1.35;
   color: $text-2;
-  white-space: nowrap;
-  box-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.6);
+  white-space: normal;
+  box-shadow: $shadow-dropdown;
   pointer-events: none;
   z-index: 30;
 }

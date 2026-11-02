@@ -23,6 +23,10 @@ export const SOURCE_DETAILS: Record<ISourceKey, { label: string; className: stri
 	'test-nmo': {label: 'Тест НМО', className: 'secondary', priority: 6},
 	'pro-nmo': {label: 'Про НМО', className: 'secondary', priority: 7},
 	'tests-nmo': {label: 'Тесты НМО', className: 'secondary', priority: 8},
+	'topquiz': {label: 'TopQuiz', className: 'secondary', priority: 9},
+	'medstandartprof': {label: 'МедСтандартПроф', className: 'secondary', priority: 10},
+	'portal-nmo': {label: 'Портал НМО', className: 'secondary', priority: 11},
+	'bogoslavsky': {label: 'Богославский', className: 'secondary', priority: 12},
 };
 
 /**

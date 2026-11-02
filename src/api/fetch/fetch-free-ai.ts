@@ -1,7 +1,7 @@
 import {fetchViaBackground} from './fetch';
 import {askAI, type IAiRequestOptions} from './fetch-ai';
 
-export type FreeAiService = 'ovh' | 'horde';
+export type FreeAiService = 'gpt-oss' | 'qwen' | 'ovh' | 'horde';
 
 export interface IFreeAiRequestConfig {
 	readonly apiKey: string;
@@ -12,7 +12,7 @@ export interface IFreeAiRequestConfig {
 
 export interface IFreeAiAnswer {
 	readonly correctIndexes: number[];
-	readonly source: 'OVH' | 'AI Horde';
+	readonly source: 'GPT-OSS 120B' | 'Qwen 3.8 27B' | 'OVH' | 'AI Horde';
 }
 
 interface IHordeModel {
@@ -26,6 +26,9 @@ interface IHordeModel {
 
 export const OVH_AI_URL = 'https://llama-3-3-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1/chat/completions';
 export const OVH_AI_MODEL = 'Meta-Llama-3_3-70B-Instruct';
+export const OVH_OPENAI_URL = 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions';
+export const OVH_GPT_OSS_MODEL = 'gpt-oss-120b';
+export const OVH_QWEN_MODEL = 'Qwen3.8-27B';
 export const HORDE_AI_URL = 'https://oai.aihorde.net/v1/chat/completions';
 export const HORDE_MODELS_URL = 'https://oai.aihorde.net/v1/models';
 export const HORDE_ANONYMOUS_KEY = '0000000000';
@@ -35,19 +38,28 @@ const HORDE_QUEUE_TIMEOUT_SECONDS = 120;
 const HORDE_CLIENT_TIMEOUT_MS = 125_000;
 const HORDE_MODELS_TIMEOUT_MS = 10_000;
 
+const OVH_ROUTES = [
+	{service: 'gpt-oss', source: 'GPT-OSS 120B'},
+	{service: 'qwen', source: 'Qwen 3.8 27B'},
+	{service: 'ovh', source: 'OVH'},
+] as const;
+
 /**
- * Бесплатный автоматический маршрут: сначала быстрый OVH, при любой ошибке или
- * пустом ответе — AI Horde. Пользователь не выбирает ни сервис, ни модель.
+ * Бесплатный автоматический маршрут: GPT-OSS 120B → Qwen 3.8 27B → OVH Llama 3.3 70B → AI Horde.
+ * При любой ошибке или пустом ответе переходит к следующей модели без регистрации.
  */
 export async function askFreeAI(question: string, options: string[], isSingle: boolean, topic: string): Promise<IFreeAiAnswer> {
-	let ovhFailure = 'не определил ответ';
+	const ovhFailures: string[] = [];
 
-	try {
-		const config = await resolveFreeAiRequest('ovh');
-		const correctIndexes = await askWithConfig(config, question, options, isSingle, topic);
-		if (correctIndexes.length) return {correctIndexes, source: 'OVH'};
-	} catch (error) {
-		ovhFailure = getErrorMessage(error);
+	for (const {service, source} of OVH_ROUTES) {
+		try {
+			const config = await resolveFreeAiRequest(service);
+			const correctIndexes = await askWithConfig(config, question, options, isSingle, topic);
+			if (correctIndexes.length) return {correctIndexes, source};
+			ovhFailures.push(`${source} — не определил ответ`);
+		} catch (error) {
+			ovhFailures.push(`${source} — ${getErrorMessage(error)}`);
+		}
 	}
 
 	try {
@@ -55,12 +67,27 @@ export async function askFreeAI(question: string, options: string[], isSingle: b
 		const correctIndexes = await askWithConfig(config, question, options, isSingle, topic);
 		return {correctIndexes, source: 'AI Horde'};
 	} catch (error) {
-		throw createErrorWithCause(`бесплатный AI недоступен: OVH — ${ovhFailure}; Horde — ${getErrorMessage(error)}`, error);
+		throw createErrorWithCause(`бесплатный AI недоступен: ${ovhFailures.join('; ')}; Horde — ${getErrorMessage(error)}`, error);
 	}
 }
 
 /** Готовит параметры бесплатного запроса; для Horde сначала выбирает живую instruct-модель. */
 export async function resolveFreeAiRequest(service: FreeAiService): Promise<IFreeAiRequestConfig> {
+	if (service === 'gpt-oss' || service === 'qwen') {
+		const isGptOss = service === 'gpt-oss';
+		return {
+			apiKey: '',
+			endpoint: OVH_OPENAI_URL,
+			model: isGptOss ? OVH_GPT_OSS_MODEL : OVH_QWEN_MODEL,
+			requestOptions: {
+				timeoutMs: OVH_TIMEOUT_MS,
+				// Лимит включает рассуждение: 32 токена обрывают ответ до выбора варианта.
+				maxTokens: 2048,
+				extraBody: isGptOss ? {temperature: 0, reasoning_effort: 'low'} : {temperature: 0},
+			},
+		};
+	}
+
 	if (service === 'ovh') {
 		return {
 			apiKey: '',

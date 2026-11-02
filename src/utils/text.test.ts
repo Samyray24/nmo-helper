@@ -57,6 +57,14 @@ describe('normalizeDashes', () => {
 		expect(normalizeDashes('АЕОРСХ')).toBe('aeopcx');
 	});
 
+	it('нормализует обозначения температуры (℃, ºС, oC, ° C)', () => {
+		const target = normalizeDashes('37°С');
+		expect(normalizeDashes('37℃')).toBe(target);
+		expect(normalizeDashes('37ºС')).toBe(target);
+		expect(normalizeDashes('37oС')).toBe(target);
+		expect(normalizeDashes('37 ° C')).toBe(target);
+	});
+
 	it('приводит к lowercase', () => {
 		expect(normalizeDashes('ABC')).toBe('abc');
 	});
@@ -78,8 +86,13 @@ describe('normalizeText', () => {
 		expect(normalizeText('аеорсх')).toBe('aeopcx');
 	});
 
+	it('нормализует обозначения температуры', () => {
+		expect(normalizeText('80 ℃')).toBe(normalizeText('80ºС'));
+		expect(normalizeText('100℉')).toBe(normalizeText('100 ° F'));
+	});
+
 	it('идемпотентна — двойное применение не меняет результат', () => {
-		const once = normalizeText('АД — Что\u00A0это');
+		const once = normalizeText('АД — Что\u00A0это 36.6 º C');
 		expect(normalizeText(once)).toBe(once);
 	});
 });
