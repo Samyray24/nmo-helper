@@ -174,7 +174,10 @@ describe('askFreeAI automatic route', () => {
 		expect(sendMessage).toHaveBeenCalledTimes(5);
 		expect(hordeRequest.url).toBe(HORDE_AI_URL);
 		expect((hordeRequest.headers as Record<string, string>).Authorization).toBe(`Bearer ${HORDE_ANONYMOUS_KEY}`);
-		expect(JSON.parse(hordeRequest.body as string)).toMatchObject({model: 'horde/auto', timeout: 120});
+		const hordeBody = JSON.parse(hordeRequest.body as string);
+		expect(hordeBody.model).toBe('horde/auto');
+		expect(hordeBody.timeout).toBeGreaterThanOrEqual(114);
+		expect(hordeBody.timeout).toBeLessThanOrEqual(115);
 		errorSpy.mockRestore();
 	});
 
@@ -194,5 +197,29 @@ describe('askFreeAI automatic route', () => {
 
 		await expect(askFreeAI('Вопрос?', ['a', 'b'], true, ''))
 			.resolves.toEqual({correctIndexes: [0], source: 'AI Horde'});
+	});
+
+	it('ограничивает суммарное ожидание всех бесплатных моделей двумя минутами', async () => {
+		let now = 1_000;
+		const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+		const models = JSON.stringify({data: [{id: 'horde/auto', template: 'chatml', worker_threads: 1}]});
+		sendMessage.mockImplementation((message: Record<string, unknown>, cb) => {
+			if (message.url === HORDE_MODELS_URL) {
+				now += Number(message.timeoutMs);
+				return cb({error: false, status: 200, text: models});
+			}
+			now += Number(message.timeoutMs);
+			return cb({error: true, status: 0, text: '', message: 'таймаут'});
+		});
+		try {
+			await expect(askFreeAI('Вопрос?', ['a', 'b'], true, ''))
+				.rejects.toThrow('бесплатный AI недоступен');
+			expect(sendMessage.mock.calls.map(([message]) => (message as Record<string, unknown>).timeoutMs))
+				.toEqual([30_000, 30_000, 30_000, 10_000, 20_000]);
+			expect(JSON.parse((sendMessage.mock.calls[4][0] as Record<string, unknown>).body as string).timeout).toBe(15);
+			expect(now).toBe(121_000);
+		} finally {
+			clock.mockRestore();
+		}
 	});
 });

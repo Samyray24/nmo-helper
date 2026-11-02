@@ -24,7 +24,7 @@ describe('getFirstAnswers', () => {
 
 		const result = await getFirstAnswers(url);
 
-		expect(mockFetch).toHaveBeenCalledWith(url);
+		expect(mockFetch).toHaveBeenCalledWith(url, {timeoutMs: 15_000});
 		expect(result).toEqual([{
 			question: 'Вопрос первой базы',
 			variants: ['Неверный', 'Верный'],
@@ -52,7 +52,7 @@ describe('getSecondAnswers', () => {
 		const result = await getSecondAnswers(url);
 
 		expect(mockFetch).toHaveBeenCalledTimes(1);
-		expect(mockFetch).toHaveBeenCalledWith(url);
+		expect(mockFetch).toHaveBeenCalledWith(url, {timeoutMs: 15_000});
 		expect(result).toEqual([{
 			question: 'Вопрос второй базы',
 			variants: ['Верный', 'Неверный'],
@@ -109,6 +109,7 @@ describe('getNmoAnswers', () => {
 				'X-NMO-Ticket': 'short-lived.uid',
 			},
 			credentials: 'omit',
+			timeoutMs: 15_000,
 		});
 		expect(mockFetch.mock.calls[0][0]).not.toContain('short-lived.uid');
 	});

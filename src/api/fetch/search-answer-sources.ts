@@ -8,10 +8,12 @@ import type {QaCaseModel} from '../../utils/cases';
 import {CACHE_MAX_TOPICS, NMO_API_TOPIC_ENDPOINT} from '../../utils/constants';
 import {extractFirstCases, extractNmoAnswer, extractSecondCases, extractThirdAnser, extractThirdQuestions, type INmoSourceQuestion} from '../../utils/extractors';
 import {parseHtml} from '../../utils/html';
+import {sourceHealth} from '../../utils/source-health';
 import {fetchViaBackground, getResponseText, isSuccessful, mapWithConcurrency} from './fetch';
 
 /** Максимальное число одновременно выполняемых запросов правильных ответов. */
 const ANSWER_REQUEST_CONCURRENCY = 6;
+const ANSWER_REQUEST_TIMEOUT_MS = 15_000;
 const nmoAnswerCache = new Map<string, Promise<QaCaseModel[]>>();
 
 /** Готовый вопрос третьего источника с идентификатором и правильными вариантами. */
@@ -24,18 +26,18 @@ export interface INmoSourceCase extends QaCaseModel {
 
 /** Загружает и разбирает страницу ответов первого источника. */
 export async function getFirstAnswers(url: string): Promise<QaCaseModel[]> {
-	const response = await fetchViaBackground(url);
+	const response = await fetchViaBackground(url, {timeoutMs: ANSWER_REQUEST_TIMEOUT_MS});
 	const text = getResponseText(response);
 
-	return extractFirstCases(parseHtml(text, true));
+	return requireRecognizedAnswers(url, extractFirstCases(parseHtml(text, true)));
 }
 
 /** Загружает и разбирает страницу ответов второго источника. */
 export async function getSecondAnswers(url: string): Promise<QaCaseModel[]> {
-	const response = await fetchViaBackground(url);
+	const response = await fetchViaBackground(url, {timeoutMs: ANSWER_REQUEST_TIMEOUT_MS});
 	const text = getResponseText(response);
 
-	return extractSecondCases(parseHtml(text, true));
+	return requireRecognizedAnswers(url, extractSecondCases(parseHtml(text, true)));
 }
 
 /**
@@ -76,6 +78,7 @@ async function requestNmoAnswers(uid: string): Promise<QaCaseModel[]> {
 			'X-NMO-Ticket': uid,
 		},
 		credentials: 'omit',
+		timeoutMs: ANSWER_REQUEST_TIMEOUT_MS,
 	});
 	const text = getResponseText(response);
 
@@ -123,14 +126,14 @@ export async function getThirdAnswers(url: string): Promise<INmoSourceCase[]> {
 	const firstPageUrl = url;
 	const secondPageUrl = `${url}?page=2`;
 	const thirdPageUrl = `${url}?page=3`;
-	const requestOptions = {credentials: 'include' as const};
+	const requestOptions = {credentials: 'include' as const, timeoutMs: ANSWER_REQUEST_TIMEOUT_MS};
 
 	// Запрашиваем последовательно, чтобы cookie с первой страницы успела попасть
 	// в дополнительные страницы. API-запросы ниже выполняются отдельно с `omit`.
 	const firstPage = await fetchViaBackground(firstPageUrl, requestOptions);
+	const firstPageText = getResponseText(firstPage);
 	const secondPage = await fetchViaBackground(secondPageUrl, requestOptions);
 	const thirdPage = await fetchViaBackground(thirdPageUrl, requestOptions);
-	const firstPageText = getResponseText(firstPage);
 
 	const questions = [
 		...extractThirdQuestions(firstPageText),
@@ -147,9 +150,17 @@ export async function getThirdAnswers(url: string): Promise<INmoSourceCase[]> {
 	const cases = loaded.filter((item): item is Omit<INmoSourceCase, 'idx'> => item !== null);
 
 	// Вопросы есть, но ни один API-ответ не удалось превратить в модель.
-	if (questions.length && !cases.length) throw new Error('не удалось загрузить ответы nmo-source');
+	if (questions.length && !cases.length) {
+		throw new Error('не удалось загрузить ответы nmo-source');
+	}
 
-	return cases.map((item, idx) => ({...item, idx}));
+	return requireRecognizedAnswers(firstPageUrl, cases.map((item, idx) => ({...item, idx})));
+}
+
+function requireRecognizedAnswers<T>(url: string, answers: T[]): T[] {
+	sourceHealth.recordAnswerResult(url, answers.length);
+	if (!answers.length) throw new Error('страница ответов не распознана');
+	return answers;
 }
 
 /**
@@ -162,7 +173,7 @@ export async function getThirdAnswers(url: string): Promise<INmoSourceCase[]> {
  */
 async function getThirdAnswer(pageUrl: string, question: INmoSourceQuestion): Promise<Omit<INmoSourceCase, 'idx'> | null> {
 	const answerUrl = new URL(`/api/question/${encodeURIComponent(question.docId)}/answer`, pageUrl);
-	const response = await fetchViaBackground(answerUrl.toString(), {credentials: 'omit'});
+	const response = await fetchViaBackground(answerUrl.toString(), {credentials: 'omit', timeoutMs: ANSWER_REQUEST_TIMEOUT_MS});
 	if (!isSuccessful(response)) return null;
 
 	const correctIndexes = extractThirdAnser(response.text, question.variants.length);

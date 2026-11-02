@@ -19,6 +19,7 @@ const THIRD_SOURCE_URL = `https://${THIRD_ANSWER_SOURCE_HOST}`;
 const NMO_API_SEARCH_URL = `https://${NMO_API_HOST}/api/nmo/topics`;
 const NMO_SEARCH_CACHE_TTL_MS = 4 * 60 * 1000;
 const NMO_SEARCH_CACHE_MAX_ENTRIES = 50;
+const SEARCH_REQUEST_TIMEOUT_MS = 15_000;
 
 interface INmoSearchCacheEntry {
 	readonly expiresAt: number;
@@ -64,6 +65,7 @@ async function requestNmoSource(normalizedQuery: string): Promise<ISearchResult[
 	const response = await fetchViaBackground(url.toString(), {
 		headers: {'Accept': 'application/json'},
 		credentials: 'omit',
+		timeoutMs: SEARCH_REQUEST_TIMEOUT_MS,
 	});
 
 	if (response.error || !response.text) return [];
@@ -107,6 +109,7 @@ export async function searchFirstSource(query: string): Promise<ISearchResult[]>
 		method: 'POST',
 		headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 		body: 'do=search&subaction=search&story=' + encodeURIComponent(normalizedQuery),
+		timeoutMs: SEARCH_REQUEST_TIMEOUT_MS,
 	});
 
 	if (response.error || !response.text) return [];
@@ -124,7 +127,7 @@ export async function searchSecondarySource(query: string): Promise<ISearchResul
 	const url = new URL('/search/', SECONDARY_SOURCE_URL);
 	url.searchParams.set('query', normalizedQuery);
 
-	const response = await fetchViaBackground(url.toString());
+	const response = await fetchViaBackground(url.toString(), {timeoutMs: SEARCH_REQUEST_TIMEOUT_MS});
 
 	if (response.error || !response.text) return [];
 
@@ -139,7 +142,7 @@ export async function searchThirdSource(query: string): Promise<ISearchResult[]>
 	if (!normalizedQuery) return [];
 
 	const url = THIRD_SOURCE_URL+ '/api/search/suggestions/categories?query='+ encodeURIComponent(normalizedQuery);
-	const response = await fetchViaBackground(url);
+	const response = await fetchViaBackground(url, {timeoutMs: SEARCH_REQUEST_TIMEOUT_MS});
 
 	if (response.error || !response.text) return [];
 

@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ADDITIONAL_SOURCES} from '../../utils/constants';
+import {sourceHealth} from '../../utils/source-health';
 import {fetchViaBackground} from './fetch';
 import {clearAdditionalSourceCaches, findAdditionalAnswer, getAdditionalAnswers, searchAdditionalSource} from './additional-sources';
 
@@ -14,7 +15,7 @@ const isSearchRequest = (url: string) => {
 	const u = new URL(url);
 	return u.searchParams.has('s') || u.pathname === '/api/test-search';
 };
-beforeEach(() => { mockFetch.mockReset(); clearAdditionalSourceCaches(); });
+beforeEach(() => { mockFetch.mockReset(); clearAdditionalSourceCaches(); sourceHealth.clear(); });
 
 describe('Запросы новых баз', () => {
 	it.each(ADDITIONAL_SOURCES)('ищет на $host через публичную форму без cookies', async source => {
@@ -67,6 +68,16 @@ describe('Запросы новых баз', () => {
 	it('не делает запрос по адресу вне новых баз', async () => {
 		await expect(getAdditionalAnswers('https://other.example/test')).rejects.toThrow();
 		expect(mockFetch).not.toHaveBeenCalled();
+	});
+
+	it('не кеширует нераспознанную страницу ответов и временно пропускает проблемный сайт', async () => {
+		const url = 'https://otvnmo.ru/test';
+		mockFetch.mockResolvedValue(ok('<div class="entry-content">Разметка изменилась</div>'));
+		for (let i = 0; i < 3; i += 1) {
+			await expect(getAdditionalAnswers(url)).rejects.toThrow('страница ответов не распознана');
+		}
+		expect(mockFetch).toHaveBeenCalledTimes(3);
+		expect(sourceHealth.snapshot().find(item => item.host === 'otvnmo.ru')).toMatchObject({consecutiveParseFailures: 3, available: false});
 	});
 });
 
