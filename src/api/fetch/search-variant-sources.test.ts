@@ -42,7 +42,7 @@ describe('searchSecondarySource', () => {
 
 		const expectedUrl = new URL('/search/', `https://${SECOND_ANSWER_SOURCE_HOST}`);
 		expectedUrl.searchParams.set('query', 'Тема (тест) - 2026');
-		expect(mockFetch).toHaveBeenCalledWith(expectedUrl.toString());
+		expect(mockFetch).toHaveBeenCalledWith(expectedUrl.toString(), {timeoutMs: 15_000});
 	});
 
 	it('не отправляет пустой запрос', async () => {
@@ -68,6 +68,7 @@ describe('searchFirstSource', () => {
 			method: 'POST',
 			headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 			body: 'do=search&subaction=search&story=' + encodeURIComponent('Инфаркт миокарда'),
+			timeoutMs: 15_000,
 		});
 	});
 
@@ -95,6 +96,7 @@ describe('searchThirdSource', () => {
 
 		expect(mockFetch).toHaveBeenCalledWith(
 			`https://${THIRD_ANSWER_SOURCE_HOST}/api/search/suggestions/categories?query=${encodeURIComponent('КОВИД')}`,
+			{timeoutMs: 15_000},
 		);
 	});
 
@@ -130,6 +132,7 @@ describe('searchNmoSource', () => {
 		expect(mockFetch).toHaveBeenCalledWith(expectedUrl.toString(), {
 			headers: {'Accept': 'application/json'},
 			credentials: 'omit',
+			timeoutMs: 15_000,
 		});
 	});
 

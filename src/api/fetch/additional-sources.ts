@@ -42,7 +42,10 @@ export async function getAdditionalAnswers(url: string): Promise<QaCaseModel[]> 
 	if (!source || !isAdditionalSource(source)) throw new Error('URL не относится к дополнительной базе');
 	const results = await cachedLoad(pageCache, url, 10 * 60 * 1000, 45, async () => {
 		const response = await fetchViaBackground(url, REQUEST_OPTIONS);
-		return extractAdditionalCases(getResponseText(response), source);
+		const parsed = extractAdditionalCases(getResponseText(response), source);
+		sourceHealth.recordAnswerResult(url, parsed.length);
+		if (!parsed.length) throw new Error('страница ответов не распознана');
+		return parsed;
 	});
 	return results.map(item => ({...item, variants: [...item.variants], answers: [...item.answers]}));
 }

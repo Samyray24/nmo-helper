@@ -37,6 +37,7 @@ const OVH_TIMEOUT_MS = 30_000;
 const HORDE_QUEUE_TIMEOUT_SECONDS = 120;
 const HORDE_CLIENT_TIMEOUT_MS = 125_000;
 const HORDE_MODELS_TIMEOUT_MS = 10_000;
+const FREE_AI_TOTAL_TIMEOUT_MS = 120_000;
 
 const OVH_ROUTES = [
 	{service: 'gpt-oss', source: 'GPT-OSS 120B'},
@@ -50,11 +51,13 @@ const OVH_ROUTES = [
  */
 export async function askFreeAI(question: string, options: string[], isSingle: boolean, topic: string): Promise<IFreeAiAnswer> {
 	const ovhFailures: string[] = [];
+	const deadline = Date.now() + FREE_AI_TOTAL_TIMEOUT_MS;
 
 	for (const {service, source} of OVH_ROUTES) {
+		if (Date.now() >= deadline) break;
 		try {
 			const config = await resolveFreeAiRequest(service);
-			const correctIndexes = await askWithConfig(config, question, options, isSingle, topic);
+			const correctIndexes = await askWithConfig(withRemainingTime(config, deadline), question, options, isSingle, topic);
 			if (correctIndexes.length) return {correctIndexes, source};
 			ovhFailures.push(`${source} — не определил ответ`);
 		} catch (error) {
@@ -63,8 +66,8 @@ export async function askFreeAI(question: string, options: string[], isSingle: b
 	}
 
 	try {
-		const config = await resolveFreeAiRequest('horde');
-		const correctIndexes = await askWithConfig(config, question, options, isSingle, topic);
+		const config = await resolveFreeAiRequest('horde', remainingTime(deadline));
+		const correctIndexes = await askWithConfig(withRemainingTime(config, deadline), question, options, isSingle, topic);
 		return {correctIndexes, source: 'AI Horde'};
 	} catch (error) {
 		throw createErrorWithCause(`бесплатный AI недоступен: ${ovhFailures.join('; ')}; Horde — ${getErrorMessage(error)}`, error);
@@ -72,7 +75,7 @@ export async function askFreeAI(question: string, options: string[], isSingle: b
 }
 
 /** Готовит параметры бесплатного запроса; для Horde сначала выбирает живую instruct-модель. */
-export async function resolveFreeAiRequest(service: FreeAiService): Promise<IFreeAiRequestConfig> {
+export async function resolveFreeAiRequest(service: FreeAiService, remainingMs?: number): Promise<IFreeAiRequestConfig> {
 	if (service === 'gpt-oss' || service === 'qwen') {
 		const isGptOss = service === 'gpt-oss';
 		return {
@@ -104,7 +107,7 @@ export async function resolveFreeAiRequest(service: FreeAiService): Promise<IFre
 	return {
 		apiKey: HORDE_ANONYMOUS_KEY,
 		endpoint: HORDE_AI_URL,
-		model: await resolveHordeModel(),
+		model: await resolveHordeModel(Math.min(HORDE_MODELS_TIMEOUT_MS, remainingMs ?? HORDE_MODELS_TIMEOUT_MS)),
 		requestOptions: {
 			timeoutMs: HORDE_CLIENT_TIMEOUT_MS,
 			maxTokens: 32,
@@ -117,14 +120,14 @@ export async function resolveFreeAiRequest(service: FreeAiService): Promise<IFre
 }
 
 /** Загружает текущих text-worker'ов AI Horde и выбирает наиболее подходящую модель. */
-export async function resolveHordeModel(): Promise<string> {
+export async function resolveHordeModel(timeoutMs = HORDE_MODELS_TIMEOUT_MS): Promise<string> {
 	const res = await fetchViaBackground(HORDE_MODELS_URL, {
 		headers: {Authorization: `Bearer ${HORDE_ANONYMOUS_KEY}`},
-		timeoutMs: HORDE_MODELS_TIMEOUT_MS,
+		timeoutMs,
 	});
 
 	if (res.error) {
-		if (res.message?.startsWith('таймаут')) throw new Error('AI Horde не отвечает за 10 с');
+		if (res.message?.startsWith('таймаут')) throw new Error(`AI Horde не отвечает за ${Math.ceil(timeoutMs / 1000)} с`);
 		throw new Error('не удалось получить модели AI Horde');
 	}
 	if (res.status < 200 || res.status >= 400) throw new Error(`AI Horde: ошибка ${res.status}`);
@@ -196,6 +199,20 @@ function askWithConfig(config: IFreeAiRequestConfig, question: string, options: 
 		config.endpoint,
 		config.requestOptions,
 	);
+}
+
+function remainingTime(deadline: number): number {
+	const remaining = deadline - Date.now();
+	if (remaining <= 0) throw new Error('превышено общее время ожидания бесплатного AI');
+	return remaining;
+}
+
+function withRemainingTime(config: IFreeAiRequestConfig, deadline: number): IFreeAiRequestConfig {
+	const timeoutMs = Math.min(config.requestOptions.timeoutMs ?? Infinity, remainingTime(deadline));
+	const extraBody = config.endpoint === HORDE_AI_URL
+		? {...config.requestOptions.extraBody, timeout: Math.min(HORDE_QUEUE_TIMEOUT_SECONDS, Math.max(1, Math.floor((timeoutMs - 5_000) / 1_000)))}
+		: config.requestOptions.extraBody;
+	return {...config, requestOptions: {...config.requestOptions, timeoutMs, extraBody}};
 }
 
 function getErrorMessage(error: unknown): string {

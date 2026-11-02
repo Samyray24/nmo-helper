@@ -6,8 +6,10 @@ interface ISourceHealthState {
 	attempts: number;
 	successes: number;
 	consecutiveFailures: number;
+	consecutiveParseFailures: number;
 	totalDurationMs: number;
 	openUntil: number;
+	parseOpenUntil: number;
 }
 
 export interface ISourceHealthSnapshot {
@@ -17,6 +19,7 @@ export interface ISourceHealthSnapshot {
 	readonly successRate: number;
 	readonly averageDurationMs: number;
 	readonly consecutiveFailures: number;
+	readonly consecutiveParseFailures: number;
 	readonly available: boolean;
 	readonly score: number;
 }
@@ -27,7 +30,7 @@ class SourceHealthRegistry {
 	public record(url: string, status: number, durationMs: number, failed: boolean, now = Date.now(), message = ''): void {
 		let host: string;
 		try { host = new URL(url).hostname.toLowerCase(); } catch { return; }
-		const state = this.states.get(host) ?? {lastResult: '', attempts: 0, successes: 0, consecutiveFailures: 0, totalDurationMs: 0, openUntil: 0};
+		const state = this.states.get(host) ?? this.emptyState();
 		state.attempts += 1;
 		state.totalDurationMs += Math.max(0, durationMs);
 		const success = !failed && status >= 200 && status < 400;
@@ -44,17 +47,18 @@ class SourceHealthRegistry {
 	}
 
 	public isAvailable(host: string, now = Date.now()): boolean {
-		return (this.states.get(host.toLowerCase())?.openUntil ?? 0) <= now;
+		const state = this.states.get(host.toLowerCase());
+		return !state || Math.max(state.openUntil, state.parseOpenUntil) <= now;
 	}
 
 	public score(host: string, now = Date.now()): number {
 		const state = this.states.get(host.toLowerCase());
 		if (!state) return 0.75;
-		if (state.openUntil > now) return 0;
+		if (Math.max(state.openUntil, state.parseOpenUntil) > now) return 0;
 		const successRate = state.successes / Math.max(1, state.attempts);
 		const averageDuration = state.totalDurationMs / Math.max(1, state.attempts);
 		const speed = 1 / (1 + averageDuration / 5000);
-		return Math.round((successRate * 0.75 + speed * 0.25) * 1000) / 1000;
+		return Math.round(Math.max(0, successRate * 0.75 + speed * 0.25 - state.consecutiveParseFailures * 0.1) * 1000) / 1000;
 	}
 
 	public snapshot(now = Date.now()): ISourceHealthSnapshot[] {
@@ -65,7 +69,8 @@ class SourceHealthRegistry {
 			successRate: state.successes / Math.max(1, state.attempts),
 			averageDurationMs: Math.round(state.totalDurationMs / Math.max(1, state.attempts)),
 			consecutiveFailures: state.consecutiveFailures,
-			available: state.openUntil <= now,
+			consecutiveParseFailures: state.consecutiveParseFailures,
+			available: Math.max(state.openUntil, state.parseOpenUntil) <= now,
 			score: this.score(host, now),
 		})).sort((a, b) => b.score - a.score || a.host.localeCompare(b.host));
 	}
@@ -77,6 +82,28 @@ class SourceHealthRegistry {
 			const state = this.states.get(new URL(url).hostname.toLowerCase());
 			if (state) state.lastResult = count ? `Найдено результатов: ${count}` : 'Поиск выполнен: результатов нет';
 		} catch { /* invalid URL */ }
+	}
+
+	/** Учитывает только страницы ответов: пустая поисковая выдача допустима. */
+	public recordAnswerResult(url: string, count: number, now = Date.now()): void {
+		try {
+			const host = new URL(url).hostname.toLowerCase();
+			const state = this.states.get(host) ?? this.emptyState();
+			if (count > 0) {
+				state.consecutiveParseFailures = 0;
+				state.parseOpenUntil = 0;
+				state.lastResult = `Распознано ответов: ${count}`;
+			} else {
+				state.consecutiveParseFailures += 1;
+				state.lastResult = 'Страница ответов не распознана';
+				if (state.consecutiveParseFailures >= FAILURE_LIMIT) state.parseOpenUntil = now + CIRCUIT_MS;
+			}
+			this.states.set(host, state);
+		} catch { /* invalid URL */ }
+	}
+
+	private emptyState(): ISourceHealthState {
+		return {lastResult: '', attempts: 0, successes: 0, consecutiveFailures: 0, consecutiveParseFailures: 0, totalDurationMs: 0, openUntil: 0, parseOpenUntil: 0};
 	}
 }
 
